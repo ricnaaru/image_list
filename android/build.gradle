@@ -1,0 +1,42 @@
+group 'com.ric.image_list'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.2.1'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 28
+
+    defaultConfig {
+        minSdkVersion 16
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+}
+
+dependencies {
+    implementation 'androidx.recyclerview:recyclerview:1.0.0'
+    implementation 'com.github.bumptech.glide:glide:4.9.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    compileOnly "androidx.appcompat:appcompat:1.0.0"
+    implementation 'com.google.android.material:material:1.0.0'
+}

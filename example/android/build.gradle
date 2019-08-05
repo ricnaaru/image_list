@@ -1,0 +1,44 @@
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+
+    dependencies {
+        // Example existing classpath
+        classpath 'com.android.tools.build:gradle:3.3.0'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+
+    //untuk error
+    //Android dependency 'com.android.support:support-fragment' has different version for the compile (26.1.0) and runtime (27.1.1) classpath.
+    //You should manually set the same version via DependencyResolution
+//    project.configurations.all {
+//        resolutionStrategy.eachDependency { details ->
+//            def requested = details.requested
+//            if (requested.group == "androidx.recyclerview.widget") {
+//                if (!requested.name.startsWith("multidex")) {
+//                    details.useVersion "26.+"
+//                }
+//            }
+//        }
+//    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

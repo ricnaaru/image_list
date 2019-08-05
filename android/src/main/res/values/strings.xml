@@ -1,0 +1,5 @@
+<resources>
+    <string name="msg_permission">Permission denied.</string>
+    <item type="id" name="isViewAnimating" />
+    <item type="id" name="isOverlayAnimating" />
+</resources>
