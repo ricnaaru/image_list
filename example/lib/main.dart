@@ -48,7 +48,7 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Container(child: Center(
-          child: ImageList(),
+          child: ImageList(albumName: "Camera"),
         ), color: Colors.red,)
       ),
     );

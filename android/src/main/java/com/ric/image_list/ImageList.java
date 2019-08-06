@@ -33,7 +33,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private GridLayoutManager layoutManager;
     private Long bucketId = 0L;
     private String albumName;
-    private int maxImage;
+    private Integer maxImage;
     private boolean disposed = false;
 
     ImageList(
@@ -53,7 +53,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         if (args instanceof HashMap) {
             Map<String, Object> params = (Map<String, Object>) args;
             albumName = params.get("albumName").toString();
-            maxImage = Integer.valueOf(params.get("maxImage").toString());
+            maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
             getAlbums();
         }
 

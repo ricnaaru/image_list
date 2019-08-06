@@ -25,10 +25,10 @@ public class ImageListAdapter
     private Uri[] pickerImages;
     public ArrayList<Uri> selectedImages = new ArrayList<>();
     private OnPhotoActionListener actionListener;
-    private final int maxSelected;
+    private final Integer maxSelected;
     private final MethodChannel methodChannel;
 
-    public ImageListAdapter(Uri[] pickerImages, int maxSelected, MethodChannel methodChannel) {
+    public ImageListAdapter(Uri[] pickerImages, Integer maxSelected, MethodChannel methodChannel) {
         this.methodChannel = methodChannel;
         this.pickerImages = pickerImages;
         this.maxSelected = maxSelected;
@@ -49,8 +49,8 @@ public class ImageListAdapter
         final Uri image = pickerImages[position];
         vh.item.setTag(image);
         vh.btnThumbCount.unselect();
-        vh.btnThumbCount.setCircleColor(Color.GREEN);
-        vh.btnThumbCount.setTextColor(Color.BLACK);
+        vh.btnThumbCount.setCircleColor(0xff006aff);
+        vh.btnThumbCount.setTextColor(Color.WHITE);
         vh.btnThumbCount.setStrokeColor(Color.WHITE);
 
         initState(selectedImages.indexOf(image), vh);
@@ -84,7 +84,7 @@ public class ImageListAdapter
     private Boolean onCheckStateChange(View v, Uri image) {
         ArrayList<Uri> pickedImages = selectedImages;
         boolean isContained = pickedImages.contains(image);
-        if (maxSelected == pickedImages.size()
+        if (maxSelected != null && maxSelected == pickedImages.size()
                 && !isContained) {
             return null;
         }
