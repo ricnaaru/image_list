@@ -1,3 +1,7 @@
+## 0.1.0+1
+
+* Uri to ImageData bug fixed
+
 ## 0.1.0
 
 * Added method reloadImage, getSelectedImages, supports both Android and iOS

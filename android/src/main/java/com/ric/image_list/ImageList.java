@@ -193,7 +193,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 RadioWithTextButton btnThumbCount = view.findViewById(R.id.btn_thumb_count);
                 ImageView imgThumbImage = view.findViewById(R.id.img_thumb_image);
                 View overlay = view.findViewById(R.id.overlay);
-                Uri image = (Uri) view.getTag();
+                ImageData image = (ImageData) view.getTag();
                 if (image != null) {
                     int index = adapter.selectedImages.indexOf(image);
                     if (index != -1) {
@@ -208,7 +208,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                                 false);
                     }
                 }
-
             }
         }
     }
