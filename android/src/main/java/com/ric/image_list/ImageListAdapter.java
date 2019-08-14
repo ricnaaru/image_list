@@ -22,13 +22,13 @@ import io.flutter.plugin.common.MethodChannel;
 
 public class ImageListAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private Uri[] pickerImages;
-    public ArrayList<Uri> selectedImages = new ArrayList<>();
+    private ImageData[] pickerImages;
+    public ArrayList<ImageData> selectedImages = new ArrayList<>();
     private OnPhotoActionListener actionListener;
     private final Integer maxSelected;
     private final MethodChannel methodChannel;
 
-    public ImageListAdapter(Uri[] pickerImages, Integer maxSelected, MethodChannel methodChannel) {
+    public ImageListAdapter(ImageData[] pickerImages, Integer maxSelected, MethodChannel methodChannel) {
         this.methodChannel = methodChannel;
         this.pickerImages = pickerImages;
         this.maxSelected = maxSelected;
@@ -46,7 +46,7 @@ public class ImageListAdapter
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder holder, final int position) {
         final ViewHolderImage vh = (ViewHolderImage) holder;
-        final Uri image = pickerImages[position];
+        final ImageData image = pickerImages[position];
         vh.item.setTag(image);
         vh.btnThumbCount.unselect();
         vh.btnThumbCount.setCircleColor(0xff006aff);
@@ -57,7 +57,7 @@ public class ImageListAdapter
         if (image != null
                 && vh.imgThumbImage != null)
             new GlideAdapter()
-                    .loadImage(vh.imgThumbImage, image);
+                    .loadImage(vh.imgThumbImage, image.getUri());
         vh.imgThumbImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -81,8 +81,8 @@ public class ImageListAdapter
         }
     }
 
-    private Boolean onCheckStateChange(View v, Uri image) {
-        ArrayList<Uri> pickedImages = selectedImages;
+    private Boolean onCheckStateChange(View v, ImageData image) {
+        ArrayList<ImageData> pickedImages = selectedImages;
         boolean isContained = pickedImages.contains(image);
         if (maxSelected != null && maxSelected == pickedImages.size()
                 && !isContained) {

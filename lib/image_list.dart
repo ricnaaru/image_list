@@ -13,12 +13,12 @@ typedef void ListCreatedCallback(ImageListController controller);
 typedef void ImageTappedCallback(int count);
 
 class ImageList extends StatefulWidget {
-  final String albumName;
+  final String albumId;
   final int maxImages;
   final ListCreatedCallback onListCreated;
   final ImageTappedCallback onImageTapped;
 
-  ImageList({this.albumName, this.maxImages, this.onListCreated, this.onImageTapped});
+  ImageList({this.albumId, this.maxImages, this.onListCreated, this.onImageTapped});
 
   @override
   _ImageListState createState() => _ImageListState();
@@ -30,7 +30,7 @@ class _ImageListState extends State<ImageList> {
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> creationParams = <String, dynamic>{
-      "albumName": widget.albumName ?? "",
+      "albumId": widget.albumId ?? "",
       "maxImage": widget.maxImages,
     };
 

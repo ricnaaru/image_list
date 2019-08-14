@@ -34,8 +34,6 @@ import UIKit
         }
     }
     
-    var settings: BSImagePickerSettings = Settings()
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
@@ -50,12 +48,6 @@ import UIKit
         //// General Declarations
         let context = UIGraphicsGetCurrentContext()
         
-        //// Color Declarations
-        
-        //// Shadow Declarations
-        let shadow2Offset = CGSize(width: 0.1, height: -0.1);
-        let shadow2BlurRadius: CGFloat = 2.5;
-        
         //// Frames
         let checkmarkFrame = bounds;
         
@@ -65,36 +57,34 @@ import UIKit
         //// CheckedOval Drawing
         let checkedOvalPath = UIBezierPath(ovalIn: CGRect(x: group.minX + floor(group.width * 0.0 + 0.5), y: group.minY + floor(group.height * 0.0 + 0.5), width: floor(group.width * 1.0 + 0.5) - floor(group.width * 0.0 + 0.5), height: floor(group.height * 1.0 + 0.5) - floor(group.height * 0.0 + 0.5)))
         context?.saveGState()
-        context?.setShadow(offset: shadow2Offset, blur: shadow2BlurRadius, color: settings.selectionShadowColor.cgColor)
-        settings.selectionFillColor.setFill()
+        
+        UIView().tintColor.setFill()
         checkedOvalPath.fill()
         context?.restoreGState()
         
-        settings.selectionStrokeColor.setStroke()
+        UIColor.white.setStroke()
         checkedOvalPath.lineWidth = 1
         checkedOvalPath.stroke()
         
-        
         context?.setFillColor(UIColor.white.cgColor)
         
-        //// Check mark for single assets
-        if (settings.maxNumberOfSelections == 1) {
-            context?.setStrokeColor(UIColor.white.cgColor)
-            
-            let checkPath = UIBezierPath()
-            checkPath.move(to: CGPoint(x: 7, y: 12.5))
-            checkPath.addLine(to: CGPoint(x: 11, y: 16))
-            checkPath.addLine(to: CGPoint(x: 17.5, y: 9.5))
-            checkPath.stroke()
-            return;
-        }
+        let selectionTextAttributes: [NSAttributedString.Key: AnyObject] = {
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.lineBreakMode = .byTruncatingTail
+            paragraphStyle.alignment = .center
+            return [
+                NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 10.0),
+                NSAttributedString.Key.paragraphStyle: paragraphStyle,
+                NSAttributedString.Key.foregroundColor: UIColor.white
+            ]
+        }()
         
         //// Bezier Drawing (Picture Number)
-        let size = selectionString.size(withAttributes: settings.selectionTextAttributes)
+        let size = selectionString.size(withAttributes: selectionTextAttributes)
         
         selectionString.draw(in: CGRect(x: checkmarkFrame.midX - size.width / 2.0,
                                         y: checkmarkFrame.midY - size.height / 2.0,
                                         width: size.width,
-                                        height: size.height), withAttributes: settings.selectionTextAttributes)
+                                        height: size.height), withAttributes: selectionTextAttributes)
     }
 }

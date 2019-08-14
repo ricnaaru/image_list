@@ -24,9 +24,9 @@ import Foundation
 import Photos
 
 class AssetStore {
-    private(set) var assets: [PHAsset]
+    private(set) var assets: [PHAsset?]
     
-    init(assets: [PHAsset] = []) {
+    init(assets: [PHAsset?] = []) {
         self.assets = assets
     }
     
@@ -46,5 +46,10 @@ class AssetStore {
     func remove(_ asset: PHAsset) {
         guard let index = assets.firstIndex(of: asset) else { return }
         assets.remove(at: index)
+    }
+    
+    func insert(_ asset: PHAsset, at i: Int) {
+        guard contains(asset) == false else { return }
+        assets.insert(asset, at: i)
     }
 }

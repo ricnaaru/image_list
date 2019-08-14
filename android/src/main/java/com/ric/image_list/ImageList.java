@@ -16,7 +16,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.flutter.plugin.common.MethodCall;
@@ -32,9 +34,10 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private RecyclerView recyclerView;
     private GridLayoutManager layoutManager;
     private Long bucketId = 0L;
-    private String albumName;
+    private String albumId;
     private Integer maxImage;
     private boolean disposed = false;
+    private View view;
 
     ImageList(
             int id,
@@ -45,14 +48,16 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         methodChannel =
                 new MethodChannel(registrar.messenger(), "plugins.flutter.io/image_list/" + id);
         methodChannel.setMethodCallHandler(this);
+        view = registrar.activity().getLayoutInflater().inflate(R.layout.image_list, null);
 
-        recyclerView = new RecyclerView(context);
+        recyclerView = view.findViewById(R.id.rv_image_list);//new RecyclerView(context);
         layoutManager = new GridLayoutManager(registrar.activity(), 3, RecyclerView.VERTICAL, false);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.requestDisallowInterceptTouchEvent(true);
+
         if (args instanceof HashMap) {
             Map<String, Object> params = (Map<String, Object>) args;
-            albumName = params.get("albumName").toString();
+            albumId = params.get("albumId").toString();
             maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
             getAlbums();
         }
@@ -94,11 +99,12 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     }
 
     private void getAlbums() {
+        Log.d("Tag", "getAlbums => " + albumId);
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
         String[] projection = {MediaStore.Images.Media.BUCKET_ID, MediaStore.Images.Media.BUCKET_DISPLAY_NAME};
-        String selection = MediaStore.Images.Media.BUCKET_DISPLAY_NAME + " = ?";
-        String[] selectionArgs = {albumName};
+        String selection = MediaStore.Images.Media.BUCKET_ID + " = ?";
+        String[] selectionArgs = {albumId};
         String sort = MediaStore.Images.Media.BUCKET_ID + " DESC";
         Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sort);
 
@@ -115,11 +121,12 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
     @Override
     public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
-        Log.d("Tag", "method call => " + methodCall.method);
-        if (methodCall.method.equals("reloadAlbum")) {
+        if (methodCall.method.equals("waitForList")) {
+            result.success(null);
+        } else if (methodCall.method.equals("reloadAlbum")) {
             if (methodCall.arguments instanceof HashMap) {
                 Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
-                albumName = params.get("albumName").toString();
+                albumId = params.get("albumId").toString();
                 getAlbums();
             }
 
@@ -128,12 +135,22 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             }
 
             result.success(true);
+        } else if (methodCall.method.equals("getSelectedImages")) {
+            List<String> imageIdList = new ArrayList<>();
+
+            for (int i = 0; i < adapter.selectedImages.size(); i++) {
+                ImageData data = adapter.selectedImages.get(i);
+
+                imageIdList.add(data.getAssetId());
+            }
+
+            result.success(imageIdList);
         }
     }
 
     @Override
     public View getView() {
-        return recyclerView;
+        return view;
     }
 
     @Override
@@ -147,7 +164,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
     private ImageListAdapter adapter;
 
-    void setAdapter(Uri[] result) {
+    void setAdapter(ImageData[] result) {
         adapter = new ImageListAdapter(result, maxImage, methodChannel);
         adapter.setActionListener(new ImageListAdapter.OnPhotoActionListener() {
             @Override
@@ -197,7 +214,25 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     }
 }
 
-class DisplayImage extends AsyncTask<Void, Void, Uri[]> {
+class ImageData {
+    private Uri uri;
+    private String assetId;
+
+    public ImageData(Uri uri, String assetId) {
+        this.uri = uri;
+        this.assetId = assetId;
+    }
+
+    public Uri getUri() {
+        return uri;
+    }
+
+    public String getAssetId() {
+        return assetId;
+    }
+}
+
+class DisplayImage extends AsyncTask<Void, Void, ImageData[]> {
     private ImageList imageList;
     private Long bucketId;
     private Boolean exceptGif;
@@ -212,19 +247,19 @@ class DisplayImage extends AsyncTask<Void, Void, Uri[]> {
     }
 
     @Override
-    protected Uri[] doInBackground(Void... params) {
+    protected ImageData[] doInBackground(Void... params) {
         return getAllMediaThumbnailsPath(bucketId, exceptGif);
     }
 
     @Override
-    protected void onPostExecute(Uri[] result) {
+    protected void onPostExecute(ImageData[] result) {
         super.onPostExecute(result);
         imageList.setAdapter(result);
     }
 
 
     @NonNull
-    private Uri[] getAllMediaThumbnailsPath(long id,
+    private ImageData[] getAllMediaThumbnailsPath(long id,
                                             Boolean exceptGif) {
         String selection = MediaStore.Images.Media.BUCKET_ID + " = ?";
         String bucketId = String.valueOf(id);
@@ -240,7 +275,7 @@ class DisplayImage extends AsyncTask<Void, Void, Uri[]> {
             c = resolver.query(images, null, null, null, sort);
         }
 
-        Uri[] imageUris = new Uri[c == null ? 0 : c.getCount()];
+        ImageData[] imageUris = new ImageData[c == null ? 0 : c.getCount()];
 
         if (c != null) {
             try {
@@ -253,7 +288,8 @@ class DisplayImage extends AsyncTask<Void, Void, Uri[]> {
                             continue;
                         int imgId = c.getInt(c.getColumnIndex(MediaStore.MediaColumns._ID));
                         Uri path = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + imgId);
-                        imageUris[++position] = path;
+                        String assetId = c.getString(c.getColumnIndex(MediaStore.MediaColumns.DATA));
+                        imageUris[++position] = new ImageData(path, assetId);
                     } while (c.moveToNext());
                 }
                 c.close();

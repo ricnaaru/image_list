@@ -46,16 +46,25 @@ class ImageListController {
     }
   }
 
-  /// Reload album with same / different albumName
+  /// Reload album with same / different albumId
   ///
   /// The returned [Future] completes after the change has been started on the
   /// platform side.
-  Future<void> reloadAlbum(String albumName) async {
+  Future<void> reloadAlbum(String albumId) async {
     // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
     // https://github.com/flutter/flutter/issues/26431
     // ignore: strong_mode_implicit_dynamic_method
     await channel.invokeMethod('reloadAlbum', <String, dynamic>{
-      'albumName': albumName,
+      'albumId': albumId,
     });
+  }
+
+  Future<List<String>> getSelectedImage() async {
+    // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
+    // https://github.com/flutter/flutter/issues/26431
+    // ignore: strong_mode_implicit_dynamic_method
+    List<dynamic> result = await channel.invokeMethod('getSelectedImages', null);
+
+    return List<String>.from(result);
   }
 }

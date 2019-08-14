@@ -33,7 +33,6 @@ final class PhotoCollectionViewDataSource : NSObject, UICollectionViewDataSource
     private let imageContentMode: PHImageContentMode = .aspectFill
     private let assetStore: AssetStore
     
-    let settings: BSImagePickerSettings?
     var imageSize: CGSize = CGSize.zero {
         didSet {
             let scale = UIScreen.main.scale
@@ -41,9 +40,8 @@ final class PhotoCollectionViewDataSource : NSObject, UICollectionViewDataSource
         }
     }
     
-    init(fetchResult: PHFetchResult<PHAsset>, assetStore: AssetStore, settings: BSImagePickerSettings?) {
+    init(fetchResult: PHFetchResult<PHAsset>, assetStore: AssetStore) {
         self.fetchResult = fetchResult
-        self.settings = settings
         self.assetStore = assetStore
         
         super.init()
@@ -62,9 +60,6 @@ final class PhotoCollectionViewDataSource : NSObject, UICollectionViewDataSource
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PhotoCell.cellIdentifier, for: indexPath) as! PhotoCell
         cell.accessibilityIdentifier = "photo_cell_\(indexPath.item)"
         cell.isAccessibilityElement = true
-        if let settings = settings {
-            cell.settings = settings
-        }
         
         // Cancel any pending image requests
         if cell.tag != 0 {
@@ -81,11 +76,7 @@ final class PhotoCollectionViewDataSource : NSObject, UICollectionViewDataSource
         
         // Set selection number
         if let index = assetStore.assets.firstIndex(of: asset) {
-            if let character = settings?.selectionCharacter {
-                cell.selectionString = String(character)
-            } else {
-                cell.selectionString = String(index+1)
-            }
+            cell.selectionString = String(index+1)
             
             cell.photoSelected = true
         } else {

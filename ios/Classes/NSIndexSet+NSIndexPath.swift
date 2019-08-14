@@ -20,49 +20,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import Photos
+import Foundation
 
 /**
- BSImagePicker settings. Tweaks these to make BSImagePicker fit your needs
- */
-public protocol BSImagePickerSettings {
+Extension for creating index paths from an index set
+*/
+extension IndexSet {
     /**
-     Max number of images user can select
-     */
-    var maxNumberOfSelections: Int { get set }
-    
-    /**
-     Character to use for selection. If nil, selection number will be used
-     */
-    var selectionCharacter: Character? { get set }
-    
-    /**
-     Inner circle color
-     */
-    var selectionFillColor: UIColor { get set }
-    
-    /**
-     Outer circle color
-     */
-    var selectionStrokeColor: UIColor { get set }
-    
-    /**
-     Shadow color
-     */
-    var selectionShadowColor: UIColor { get set }
-    
-    /**
-     Attributes for text inside circle. Color, font, etc
-     */
-    var selectionTextAttributes: [NSAttributedString.Key: AnyObject] { get set }
-    
-    /**
-     BackgroundColor
-     */
-    var backgroundColor: UIColor { get set }
-    
-    /**
-     Return how many cells per row you want to show for the given size classes
-     */
-    var cellsPerRow: (_ verticalSize: UIUserInterfaceSizeClass, _ horizontalSize: UIUserInterfaceSizeClass) -> Int { get set }
+    - parameter section: The section for the created NSIndexPaths
+    - return: An array with NSIndexPaths
+    */
+    func bs_indexPathsForSection(_ section: Int) -> [IndexPath] {
+        var indexPaths: [IndexPath] = []
+        
+        for value in self {
+            indexPaths.append(IndexPath(item: value, section: section))
+        }
+        
+        return indexPaths
+    }
 }

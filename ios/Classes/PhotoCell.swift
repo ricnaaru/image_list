@@ -35,14 +35,6 @@ final class PhotoCell: UICollectionViewCell {
     private let selectionView: SelectionView = SelectionView(frame: .zero)
     
     weak var asset: PHAsset?
-    var settings: BSImagePickerSettings {
-        get {
-            return selectionView.settings
-        }
-        set {
-            selectionView.settings = newValue
-        }
-    }
     
     var selectionString: String {
         get {
@@ -124,7 +116,6 @@ final class PhotoCell: UICollectionViewCell {
     }
     
     private func updateAlpha(_ selected: Bool) {
-        print("selected => \(selected)")
         if selected == true {
             self.selectionView.alpha = 1.0
             self.selectionOverlayView.alpha = 0.3

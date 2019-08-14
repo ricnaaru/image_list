@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:image_list/plugin.dart';
 import 'package:image_list/image_list.dart';
 
 void main() => runApp(MyApp());
@@ -12,11 +13,19 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  List<Album> albums;
+  ImageListController controller;
+  Album currentAlbum;
 
   @override
   void initState() {
     super.initState();
+    ImageListPlugin.getAlbums().then((albums) {
+      setState(() {
+        this.albums = albums;
+        this.currentAlbum = albums.first;
+      });
+    });
 //    initPlatformState();
   }
 
@@ -47,9 +56,51 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Container(child: Center(
-          child: ImageList(albumName: "Camera"),
-        ), color: Colors.red,)
+        body: albums == null
+            ? Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  DropdownButton<Album>(
+                    value: currentAlbum,
+                    onChanged: (Album newAlbum) {
+                      this.currentAlbum = newAlbum;
+                      setState(() {
+                        this.controller.reloadAlbum(currentAlbum.identifier);
+                      });
+                    },
+                    items: albums.map<DropdownMenuItem<Album>>((Album value) {
+                      return DropdownMenuItem<Album>(
+                        value: value,
+                        child: Text(value.name),
+                      );
+                    }).toList(),
+                  ),
+                  Expanded(
+                    child: InkWell(child: ImageList(
+                      albumId: currentAlbum?.identifier,
+                      onImageTapped: (count) {
+                        print("onImageTapped => $count");
+                      },
+                      onListCreated: (controller) {
+                        this.controller = controller;
+                      },
+                    ), onTap: () {
+                      print("aduh di tap");
+                    },),
+                  ),
+                  Padding(
+                    child: FlatButton(
+                      child: Text("Submit"),
+                      onPressed: () {
+                        this.controller.getSelectedImage().then((res) {
+                          print("res => $res");
+                        });
+                      },
+                    ),
+                    padding: EdgeInsets.all(16.0),
+                  )
+                ],
+              ),
       ),
     );
   }
