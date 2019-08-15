@@ -1,3 +1,7 @@
+## 0.1.1
+
+* Selections argument added to preselect certain images
+
 ## 0.1.0+1
 
 * Uri to ImageData bug fixed

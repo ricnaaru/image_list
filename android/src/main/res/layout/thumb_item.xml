@@ -15,7 +15,7 @@
             android:layout_height="match_parent"
             android:clipChildren="false"
             android:clipToPadding="false"
-            android:cropToPadding="false" />
+            android:cropToPadding="false"/>
 
         <com.ric.image_list.RadioWithTextButton
             android:id="@+id/btn_thumb_count"

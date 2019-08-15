@@ -13,9 +13,11 @@ import android.view.View;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +40,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private Integer maxImage;
     private boolean disposed = false;
     private View view;
+    private ArrayList<ImageData> selectedImages = new ArrayList<>();
 
     ImageList(
             int id,
@@ -55,10 +58,29 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.requestDisallowInterceptTouchEvent(true);
 
+        Log.d("tag", "(args instanceof HashMap) => " + (args instanceof HashMap));
         if (args instanceof HashMap) {
             Map<String, Object> params = (Map<String, Object>) args;
             albumId = params.get("albumId").toString();
             maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
+
+            if (params.get("selections") != null) {
+                List selections = (ArrayList) params.get("selections");
+                Log.d("tag", "selections size => " + selections.size());
+
+                for (int i = 0; i < selections.size(); i++) {
+                    Map<String, Object> selection = (Map<String, Object>) selections.get(i);
+                    String albumId = selection.get("albumId") == null ? "" : selection.get("albumId").toString();
+                    String assetId = selection.get("assetId") == null ? "" : selection.get("assetId").toString();
+                    String uri = selection.get("uri") == null ? "" : selection.get("uri").toString();
+                    Log.d("tag", i + " selections uri => " + uri);
+                    Log.d("tag", i + " selections albumId => " + albumId);
+                    Log.d("tag", i + " selections assetId => " + assetId);
+                    selectedImages.add(new ImageData(Uri.parse(uri), albumId, assetId));
+                }
+                Log.d("tag", "selectedImages => " + selectedImages);
+            }
+
             getAlbums();
         }
 
@@ -136,12 +158,16 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
             result.success(true);
         } else if (methodCall.method.equals("getSelectedImages")) {
-            List<String> imageIdList = new ArrayList<>();
+            List<Map<String, String>> imageIdList = new ArrayList<>();
 
             for (int i = 0; i < adapter.selectedImages.size(); i++) {
                 ImageData data = adapter.selectedImages.get(i);
 
-                imageIdList.add(data.getAssetId());
+                Map<String, String> map = new HashMap<>();
+                map.put("albumId", data.getAlbumId());
+                map.put("assetId", data.getAssetId());
+                map.put("uri", data.getUri().toString());
+                imageIdList.add(map);
             }
 
             result.success(imageIdList);
@@ -165,7 +191,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private ImageListAdapter adapter;
 
     void setAdapter(ImageData[] result) {
-        adapter = new ImageListAdapter(result, maxImage, methodChannel);
+        adapter = new ImageListAdapter(result, selectedImages, maxImage, methodChannel);
         adapter.setActionListener(new ImageListAdapter.OnPhotoActionListener() {
             @Override
             public void onDeselect() {
@@ -215,10 +241,12 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
 class ImageData {
     private Uri uri;
+    private String albumId;
     private String assetId;
 
-    public ImageData(Uri uri, String assetId) {
+    public ImageData(Uri uri, String albumId, String assetId) {
         this.uri = uri;
+        this.albumId = albumId;
         this.assetId = assetId;
     }
 
@@ -228,6 +256,20 @@ class ImageData {
 
     public String getAssetId() {
         return assetId;
+    }
+
+    public String getAlbumId() {
+        return albumId;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (!(obj instanceof ImageData)) return false;
+
+        ImageData other = (ImageData) obj;
+        return other.getAlbumId().equals(this.albumId) &&
+                other.getAssetId().equals(this.assetId) &&
+                other.getUri().equals(this.uri);
     }
 }
 
@@ -259,7 +301,7 @@ class DisplayImage extends AsyncTask<Void, Void, ImageData[]> {
 
     @NonNull
     private ImageData[] getAllMediaThumbnailsPath(long id,
-                                            Boolean exceptGif) {
+                                                  Boolean exceptGif) {
         String selection = MediaStore.Images.Media.BUCKET_ID + " = ?";
         String bucketId = String.valueOf(id);
         String sort = MediaStore.Images.Media._ID + " DESC";
@@ -288,7 +330,7 @@ class DisplayImage extends AsyncTask<Void, Void, ImageData[]> {
                         int imgId = c.getInt(c.getColumnIndex(MediaStore.MediaColumns._ID));
                         Uri path = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + imgId);
                         String assetId = c.getString(c.getColumnIndex(MediaStore.MediaColumns.DATA));
-                        imageUris[++position] = new ImageData(path, assetId);
+                        imageUris[++position] = new ImageData(path, bucketId, assetId);
                     } while (c.moveToNext());
                 }
                 c.close();

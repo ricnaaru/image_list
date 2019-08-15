@@ -23,15 +23,20 @@ import io.flutter.plugin.common.MethodChannel;
 public class ImageListAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private ImageData[] pickerImages;
-    public ArrayList<ImageData> selectedImages = new ArrayList<>();
+    public ArrayList<ImageData> selectedImages;
     private OnPhotoActionListener actionListener;
     private final Integer maxSelected;
     private final MethodChannel methodChannel;
 
-    public ImageListAdapter(ImageData[] pickerImages, Integer maxSelected, MethodChannel methodChannel) {
+    public ImageListAdapter(ImageData[] pickerImages, ArrayList<ImageData> selectedImages, Integer maxSelected, MethodChannel methodChannel) {
         this.methodChannel = methodChannel;
         this.pickerImages = pickerImages;
+        this.selectedImages = selectedImages;
         this.maxSelected = maxSelected;
+
+        for (int i = 0; i < selectedImages.size(); i++){
+            Log.d("tag", "ImageListAdapter selectedImages (" + i + ") => " + selectedImages.get(i));
+        }
     }
 
     @NonNull
@@ -70,6 +75,19 @@ public class ImageListAdapter
                 }
             }
         });
+//        vh.imgThumbImage.setOnLongClickListener(new View.OnLongClickListener() {
+//            @Override
+//            public boolean onLongClick(View v) {
+//                Boolean selected = onCheckStateChange(vh.item, image);
+//                Log.d("tag", "long selected => " + selected);
+//                if (selected != null) {
+//                    Map<String, Object> params = new HashMap<String, Object>();
+//                    params.put("count", selectedImages.size());
+//                    methodChannel.invokeMethod("onImageTapped", params);
+//                }
+//                return true;
+//            }
+//        });
     }
 
     private void initState(int selectedIndex, ViewHolderImage vh) {

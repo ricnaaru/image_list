@@ -7,19 +7,18 @@ part of image_list;
 /// Controller for a single GoogleMap instance running on the host platform.
 class ImageListController {
   ImageListController._(
-      this.channel,
-      this._imageListState,
-      ) : assert(channel != null) {
+    this.channel,
+    this._imageListState,
+  ) : assert(channel != null) {
     channel.setMethodCallHandler(_handleMethodCall);
   }
 
   static Future<ImageListController> init(
-      int id,
-      _ImageListState imageListState,
-      ) async {
+    int id,
+    _ImageListState imageListState,
+  ) async {
     assert(id != null);
-    final MethodChannel channel =
-    MethodChannel('plugins.flutter.io/image_list/$id');
+    final MethodChannel channel = MethodChannel('plugins.flutter.io/image_list/$id');
     // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
     // https://github.com/flutter/flutter/issues/26431
     // ignore: strong_mode_implicit_dynamic_method
@@ -59,12 +58,42 @@ class ImageListController {
     });
   }
 
-  Future<List<String>> getSelectedImage() async {
+  Future<List<ImageData>> getSelectedImage() async {
     // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
     // https://github.com/flutter/flutter/issues/26431
     // ignore: strong_mode_implicit_dynamic_method
-    List<dynamic> result = await channel.invokeMethod('getSelectedImages', null);
+    List<ImageData> result;
+    List<dynamic> raw = await channel.invokeMethod('getSelectedImages', null);
 
-    return List<String>.from(result);
+    if (raw != null) {
+      result = raw.map((map) {
+        return ImageData.fromJson(map);
+      }).toList();
+    }
+    return result;
+  }
+}
+
+class ImageData {
+  final String albumId;
+  final String assetId;
+  final String uri;
+
+  ImageData({this.albumId, this.assetId, this.uri});
+
+  Map toMap() {
+    return {
+      "albumId": albumId,
+      "assetId": assetId,
+      "uri": uri,
+    };
+  }
+
+  factory ImageData.fromJson(Map json) {
+    return ImageData(
+      albumId: json['albumId'] as String,
+      assetId: json['assetId'] as String,
+      uri: json['uri'] as String,
+    );
   }
 }

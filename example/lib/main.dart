@@ -16,6 +16,7 @@ class _MyAppState extends State<MyApp> {
   List<Album> albums;
   ImageListController controller;
   Album currentAlbum;
+  List<ImageData> _selections;
 
   @override
   void initState() {
@@ -76,24 +77,31 @@ class _MyAppState extends State<MyApp> {
                     }).toList(),
                   ),
                   Expanded(
-                    child: InkWell(child: ImageList(
-                      albumId: currentAlbum?.identifier,
-                      onImageTapped: (count) {
-                        print("onImageTapped => $count");
+                    child: InkWell(
+                      child: ImageList(
+                        albumId: currentAlbum?.identifier,
+                        onImageTapped: (count) {
+                          print("onImageTapped => $count");
+                        },
+                        onListCreated: (controller) {
+                          this.controller = controller;
+                        },
+                        selections: _selections,
+                      ),
+                      onTap: () {
+                        print("aduh di tap");
                       },
-                      onListCreated: (controller) {
-                        this.controller = controller;
-                      },
-                    ), onTap: () {
-                      print("aduh di tap");
-                    },),
+                    ),
                   ),
                   Padding(
                     child: FlatButton(
                       child: Text("Submit"),
                       onPressed: () {
                         this.controller.getSelectedImage().then((res) {
-                          print("res => $res");
+                          print("res => ${res.runtimeType}");
+//                          _selections = res.map((map) {
+//                            return ImageData.fromJson(map);
+//                          }).toList();
                         });
                       },
                     ),
