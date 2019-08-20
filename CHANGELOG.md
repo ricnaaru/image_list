@@ -1,3 +1,7 @@
+## 0.1.2+2
+
+* Adding function on controller to select max image
+
 ## 0.1.2+1
 
 * Single / multiple bug for Android fixed

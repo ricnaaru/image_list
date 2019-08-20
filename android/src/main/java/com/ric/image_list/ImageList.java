@@ -58,7 +58,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.requestDisallowInterceptTouchEvent(true);
 
-        Log.d("tag", "(args instanceof HashMap) => " + (args instanceof HashMap));
         if (args instanceof HashMap) {
             Map<String, Object> params = (Map<String, Object>) args;
             albumId = params.get("albumId").toString();
@@ -66,19 +65,15 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
             if (params.get("selections") != null) {
                 List selections = (ArrayList) params.get("selections");
-                Log.d("tag", "selections size => " + selections.size());
 
                 for (int i = 0; i < selections.size(); i++) {
                     Map<String, Object> selection = (Map<String, Object>) selections.get(i);
                     String albumId = selection.get("albumId") == null ? "" : selection.get("albumId").toString();
                     String assetId = selection.get("assetId") == null ? "" : selection.get("assetId").toString();
                     String uri = selection.get("uri") == null ? "" : selection.get("uri").toString();
-                    Log.d("tag", i + " selections uri => " + uri);
-                    Log.d("tag", i + " selections albumId => " + albumId);
-                    Log.d("tag", i + " selections assetId => " + assetId);
+
                     selectedImages.add(new ImageData(Uri.parse(uri), albumId, assetId));
                 }
-                Log.d("tag", "selectedImages => " + selectedImages);
             }
 
             getAlbums();
@@ -121,7 +116,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     }
 
     private void getAlbums() {
-        Log.d("Tag", "getAlbums => " + albumId);
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
         String[] projection = {MediaStore.Images.Media.BUCKET_ID, MediaStore.Images.Media.BUCKET_DISPLAY_NAME};
@@ -145,6 +139,15 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
         if (methodCall.method.equals("waitForList")) {
             result.success(null);
+        } else if (methodCall.method.equals("setMaxImage")) {
+            if (methodCall.arguments instanceof HashMap) {
+                Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
+                maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
+                adapter.setMaxSelected(maxImage);
+                adapter.notifyDataSetChanged();
+            }
+
+            result.success(true);
         } else if (methodCall.method.equals("reloadAlbum")) {
             if (methodCall.arguments instanceof HashMap) {
                 Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
@@ -200,13 +203,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         });
 
         recyclerView.setAdapter(adapter);
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                Log.d("tag", "onscroll => " + dx + ", " + dy);
-            }
-        });
     }
 
     private void refreshThumb() {

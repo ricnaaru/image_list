@@ -35,7 +35,6 @@ public class PermissionCheck {
         if (permissionCheckRead != PackageManager.PERMISSION_GRANTED || permissionCheckWrite != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale((Activity) context,
                     Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                Log.d("TAG", "satu");
                 // Show an expanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
@@ -43,7 +42,6 @@ public class PermissionCheck {
                         new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         PERMISSION_STORAGE);
             } else {
-                Log.d("TAG", "dua");
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions((Activity) context,
                         new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE},

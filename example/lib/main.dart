@@ -17,6 +17,7 @@ class _MyAppState extends State<MyApp> {
   ImageListController controller;
   Album currentAlbum;
   List<ImageData> _selections;
+  bool multipleMode = false;
 
   @override
   void initState() {
@@ -29,26 +30,6 @@ class _MyAppState extends State<MyApp> {
     });
 //    initPlatformState();
   }
-
-//  // Platform messages are asynchronous, so we initialize in an async method.
-//  Future<void> initPlatformState() async {
-//    String platformVersion;
-//    // Platform messages may fail, so we use a try/catch PlatformException.
-//    try {
-//      platformVersion = await ImageList.platformVersion;
-//    } on PlatformException {
-//      platformVersion = 'Failed to get platform version.';
-//    }
-//
-//    // If the widget was removed from the tree while the asynchronous platform
-//    // message was in flight, we want to discard the reply rather than calling
-//    // setState to update our non-existent appearance.
-//    if (!mounted) return;
-//
-//    setState(() {
-//      _platformVersion = platformVersion;
-//    });
-//  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +56,15 @@ class _MyAppState extends State<MyApp> {
                         child: Text(value.name),
                       );
                     }).toList(),
+                  ),
+                  FlatButton(
+                    child: Text(multipleMode ? "Set Single" : "Set Multiple"),
+                    onPressed: () {
+                      setState(() {
+                        multipleMode = !multipleMode;
+                        if (this.controller != null) this.controller.setMaxImage(multipleMode ? null : 1);
+                      });
+                    },
                   ),
                   Expanded(
                     child: InkWell(

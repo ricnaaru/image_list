@@ -25,7 +25,7 @@ public class ImageListAdapter
     private ImageData[] pickerImages;
     public ArrayList<ImageData> selectedImages;
     private OnPhotoActionListener actionListener;
-    private final Integer maxSelected;
+    private Integer maxSelected;
     private final MethodChannel methodChannel;
 
     public ImageListAdapter(ImageData[] pickerImages, ArrayList<ImageData> selectedImages, Integer maxSelected, MethodChannel methodChannel) {
@@ -33,6 +33,11 @@ public class ImageListAdapter
         this.pickerImages = pickerImages;
         this.selectedImages = selectedImages;
         this.maxSelected = maxSelected;
+    }
+
+    public void setMaxSelected(Integer maxSelected) {
+        this.maxSelected = maxSelected;
+        this.selectedImages.clear();
     }
 
     @NonNull
@@ -52,7 +57,7 @@ public class ImageListAdapter
         vh.btnThumbCount.unselect();
         vh.btnThumbCount.setCircleColor(0xff006aff);
         vh.btnThumbCount.setTextColor(Color.WHITE);
-        vh.btnThumbCount.setStrokeColor(Color.WHITE);
+        vh.btnThumbCount.setStrokeColor(maxSelected != null && maxSelected.equals(1) ? Color.TRANSPARENT : Color.WHITE);
 
         initState(selectedImages.indexOf(image), vh);
         if (image != null
@@ -63,7 +68,6 @@ public class ImageListAdapter
             @Override
             public void onClick(View v) {
                 Boolean selected = onCheckStateChange(vh.item, image);
-                Log.d("tag", "selected => " + selected);
                 if (selected != null) {
                     Map<String, Object> params = new HashMap<String, Object>();
                     params.put("count", selectedImages.size());
@@ -71,19 +75,6 @@ public class ImageListAdapter
                 }
             }
         });
-//        vh.imgThumbImage.setOnLongClickListener(new View.OnLongClickListener() {
-//            @Override
-//            public boolean onLongClick(View v) {
-//                Boolean selected = onCheckStateChange(vh.item, image);
-//                Log.d("tag", "long selected => " + selected);
-//                if (selected != null) {
-//                    Map<String, Object> params = new HashMap<String, Object>();
-//                    params.put("count", selectedImages.size());
-//                    methodChannel.invokeMethod("onImageTapped", params);
-//                }
-//                return true;
-//            }
-//        });
     }
 
     private void initState(int selectedIndex, ViewHolderImage vh) {
