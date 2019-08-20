@@ -1,3 +1,7 @@
+## 0.1.2+1
+
+* Single / multiple bug for Android fixed
+
 ## 0.1.2
 
 * Added single / multiple mode for Android

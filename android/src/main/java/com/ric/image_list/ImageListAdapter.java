@@ -33,10 +33,6 @@ public class ImageListAdapter
         this.pickerImages = pickerImages;
         this.selectedImages = selectedImages;
         this.maxSelected = maxSelected;
-
-        for (int i = 0; i < selectedImages.size(); i++) {
-            Log.d("tag", "ImageListAdapter selectedImages (" + i + ") => " + selectedImages.get(i));
-        }
     }
 
     @NonNull
@@ -70,11 +66,7 @@ public class ImageListAdapter
                 Log.d("tag", "selected => " + selected);
                 if (selected != null) {
                     Map<String, Object> params = new HashMap<String, Object>();
-                    if (maxSelected.equals(1)) {
-                        params.put("count", 1);
-                    } else {
-                        params.put("count", selectedImages.size());
-                    }
+                    params.put("count", selectedImages.size());
                     methodChannel.invokeMethod("onImageTapped", params);
                 }
             }
@@ -104,25 +96,28 @@ public class ImageListAdapter
     }
 
     private Boolean onCheckStateChange(View v, ImageData image) {
-        if (maxSelected != null && maxSelected.equals(1)) return false;
-
         ArrayList<ImageData> pickedImages = selectedImages;
         boolean isContained = pickedImages.contains(image);
-        if (maxSelected != null && maxSelected == pickedImages.size()
+        if (maxSelected != null && !maxSelected.equals(1) && maxSelected == pickedImages.size()
                 && !isContained) {
             return null;
         }
         ImageView imgThumbImage = v.findViewById(R.id.img_thumb_image);
         RadioWithTextButton btnThumbCount = v.findViewById(R.id.btn_thumb_count);
         View overlay = v.findViewById(R.id.overlay);
-        if (isContained) {
-            pickedImages.remove(image);
-            btnThumbCount.unselect();
-        } else {
+        if (maxSelected != null && maxSelected.equals(1)) {
+            pickedImages.clear();
             pickedImages.add(image);
-            updateRadioButton(btnThumbCount, String.valueOf(pickedImages.size()));
+        } else {
+            if (isContained) {
+                pickedImages.remove(image);
+                btnThumbCount.unselect();
+            } else {
+                pickedImages.add(image);
+                updateRadioButton(btnThumbCount, String.valueOf(pickedImages.size()));
+            }
+            animScale(imgThumbImage, !isContained, true, overlay);
         }
-        animScale(imgThumbImage, !isContained, true, overlay);
 
         return !isContained;
     }

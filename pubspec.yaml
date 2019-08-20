@@ -1,6 +1,6 @@
 name: image_list
 description: A tappable list of images
-version: 0.1.2
+version: 0.1.2+1
 author: Richardo Thayeb <richardothayeb@gmail.com>
 homepage: https://github.com/ricnaaru/image_list
 
