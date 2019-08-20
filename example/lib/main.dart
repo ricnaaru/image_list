@@ -79,6 +79,7 @@ class _MyAppState extends State<MyApp> {
                   Expanded(
                     child: InkWell(
                       child: ImageList(
+                        maxImages: 1,
                         albumId: currentAlbum?.identifier,
                         onImageTapped: (count) {
                           print("onImageTapped => $count");

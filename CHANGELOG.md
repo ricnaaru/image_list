@@ -1,3 +1,7 @@
+## 0.1.2
+
+* Added single / multiple mode for Android
+
 ## 0.1.1
 
 * Selections argument added to preselect certain images

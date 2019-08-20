@@ -34,7 +34,7 @@ public class ImageListAdapter
         this.selectedImages = selectedImages;
         this.maxSelected = maxSelected;
 
-        for (int i = 0; i < selectedImages.size(); i++){
+        for (int i = 0; i < selectedImages.size(); i++) {
             Log.d("tag", "ImageListAdapter selectedImages (" + i + ") => " + selectedImages.get(i));
         }
     }
@@ -70,7 +70,11 @@ public class ImageListAdapter
                 Log.d("tag", "selected => " + selected);
                 if (selected != null) {
                     Map<String, Object> params = new HashMap<String, Object>();
-                    params.put("count", selectedImages.size());
+                    if (maxSelected.equals(1)) {
+                        params.put("count", 1);
+                    } else {
+                        params.put("count", selectedImages.size());
+                    }
                     methodChannel.invokeMethod("onImageTapped", params);
                 }
             }
@@ -100,6 +104,8 @@ public class ImageListAdapter
     }
 
     private Boolean onCheckStateChange(View v, ImageData image) {
+        if (maxSelected != null && maxSelected.equals(1)) return false;
+
         ArrayList<ImageData> pickedImages = selectedImages;
         boolean isContained = pickedImages.contains(image);
         if (maxSelected != null && maxSelected == pickedImages.size()
