@@ -75,7 +75,7 @@ final class PhotoCollectionViewDataSource : NSObject, UICollectionViewDataSource
         })
         
         // Set selection number
-        if let index = assetStore.assets.firstIndex(of: asset) {
+        if let index = assetStore.assets.firstIndex(where: { $0 != nil && $0?.asset == asset }) {
             cell.selectionString = String(index+1)
             
             cell.photoSelected = true

@@ -1,3 +1,7 @@
+## 0.1.3
+
+* Tested on iOS
+
 ## 0.1.2+2
 
 * Adding function on controller to select max image

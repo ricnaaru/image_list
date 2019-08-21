@@ -24,9 +24,9 @@ import Foundation
 import Photos
 
 class AssetStore {
-    private(set) var assets: [PHAsset?]
+    private(set) var assets: [Asset?]
     
-    init(assets: [PHAsset?] = []) {
+    init(assets: [Asset?] = []) {
         self.assets = assets
     }
     
@@ -35,21 +35,36 @@ class AssetStore {
     }
     
     func contains(_ asset: PHAsset) -> Bool {
-        return assets.contains(asset)
+        return assets.contains(where: { $0 != nil && $0?.asset == asset })
     }
     
-    func append(_ asset: PHAsset) {
+    func append(_ asset: PHAsset, _ albumId: String) {
         guard contains(asset) == false else { return }
-        assets.append(asset)
+        assets.append(Asset(albumId: albumId, asset: asset))
     }
     
     func remove(_ asset: PHAsset) {
-        guard let index = assets.firstIndex(of: asset) else { return }
+        guard let index = assets.firstIndex(where: { $0 != nil && $0?.asset == asset }) else { return }
         assets.remove(at: index)
     }
     
-    func insert(_ asset: PHAsset, at i: Int) {
+    func removeAll() {
+        assets.removeAll()
+    }
+    
+    func insert(_ asset: PHAsset, _ albumId: String, at i: Int) {
         guard contains(asset) == false else { return }
-        assets.insert(asset, at: i)
+        assets.insert(Asset(albumId: albumId, asset: asset), at: i)
     }
 }
+
+class Asset {
+    var albumId: String
+    var asset: PHAsset
+    
+    init(albumId: String, asset: PHAsset) {
+        self.albumId = albumId
+        self.asset = asset
+    }
+}
+

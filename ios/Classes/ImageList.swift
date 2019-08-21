@@ -14,7 +14,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
     let viewId: Int64!
     var uiCollectionView: UICollectionView!
     var f:PHFetchResult<PHAsset> = PHFetchResult()
-    var selections: [String] = []
+    var selections: [[String: String]] = []
     var imageSize: CGSize = CGSize.zero {
         didSet {
             let scale = UIScreen.main.scale
@@ -37,15 +37,13 @@ public class ImageListView : NSObject, FlutterPlatformView {
         let x = GridCollectionViewLayout()
         x.itemsPerRow = 3
         
-        //
-        //        64468341-3EB7-4D40-BF3B-F81EBDC37EF8/L0/001
         if let dict = args as? [String: Any] {
-            self.selections = dict["selections"] as? [String] ?? []
+            self.selections = dict["selections"] as? [[String: String]] ?? []
             self.albumId = (dict["albumId"] as? String)!
             self.maxImage = dict["maxImage"] as? Int
         }
         
-        assetStore = AssetStore(assets: [PHAsset?](repeating: nil, count: selections.count))
+        assetStore = AssetStore(assets: [Asset?](repeating: nil, count: selections.count))
         
         self.uiCollectionView = UICollectionView(frame: frame, collectionViewLayout: x)
         _channel = FlutterMethodChannel(name: "plugins.flutter.io/image_list/\(viewId)", binaryMessenger: registrar.messenger())
@@ -65,6 +63,16 @@ public class ImageListView : NSObject, FlutterPlatformView {
         _channel.setMethodCallHandler { call, result in
             if call.method == "waitForList" {
                 result(nil)
+            } else if call.method == "setMaxImage" {
+                if let dict = call.arguments as? [String: Any] {
+                    self.maxImage = (dict["maxImage"] as? Int)
+                } else {
+                    self.maxImage = 0
+                }
+                
+                self.assetStore.removeAll()
+                
+                result(nil)
             } else if call.method == "reloadAlbum" {
                 if let dict = call.arguments as? [String: Any] {
                     self.albumId = (dict["albumId"] as? String)!
@@ -72,14 +80,24 @@ public class ImageListView : NSObject, FlutterPlatformView {
                     self.albumId = ""
                 }
                 self.loadImage()
+                
                 result(nil)
             } else if call.method == "getSelectedImages" {
-                let localIdentifiers = self.assetStore.assets.map({
-                    (asset: PHAsset?) -> String? in
-                    return asset?.localIdentifier
-                })
+                var selectedImages: [[String: String]] = []
                 
-                result(localIdentifiers)
+                if self.assetStore.assets.count == 0 {
+                    result(nil)
+                } else {
+                    for i in 0...self.assetStore.assets.count - 1 {
+                        var dict: [String: String] = [String:String]()
+                        
+                        dict["albumId"] = self.assetStore.assets[i]?.albumId
+                        dict["assetId"] = self.assetStore.assets[i]?.asset.localIdentifier
+                        selectedImages.append(dict)
+                    }
+
+                    result(selectedImages)
+                }
             }
         }
         
@@ -112,8 +130,14 @@ public class ImageListView : NSObject, FlutterPlatformView {
         
         if self.f.count > 0 {
             for i in 0...self.f.count - 1 {
-                if let index = selections.firstIndex(of: f[i].localIdentifier) {
-                    assetStore.insert(f[i], at: index)
+                if self.selections.count > 0 {
+                    for j in 0...self.selections.count - 1 {
+                        var x = self.selections[j]
+                        
+                        if x["assetId"] == f[i].localIdentifier {
+                            assetStore.insert(f[i], self.albumId, at: j)
+                        }
+                    }
                 }
             }
         }
@@ -153,11 +177,7 @@ extension ImageListView: UICollectionViewDataSource {
         }
         
         let option = PHImageRequestOptions()
-//        option.isNetworkAccessAllowed = true
-//        option.version = .original
-//        option.deliveryMode = .fastFormat
-//        option.resizeMode = .fast
-//        option.deliveryMode = PHImageRequestOptionsDeliveryMode.highQualityFormat
+        
         option.isSynchronous = false
         // Request image
         cell.tag = Int(PHCachingImageManager.default().requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: option) { (result, e) in
@@ -165,12 +185,12 @@ extension ImageListView: UICollectionViewDataSource {
         })
 
         // Set selection number
-            if let index = assetStore.assets.firstIndex(of: asset) {
-                cell.selectionString = String(index+1)
-                cell.photoSelected = true
-            } else {
-                cell.photoSelected = false
-            }
+        if let index = assetStore.assets.firstIndex(where: { $0 != nil && $0?.asset == asset }) {
+            cell.selectionString = String(index+1)
+            cell.photoSelected = true
+        } else {
+            cell.photoSelected = false
+        }
 
         cell.isAccessibilityElement = true
         cell.accessibilityTraits = UIAccessibilityTraits.button
@@ -203,7 +223,7 @@ extension ImageListView: UICollectionViewDelegate {
                     return nil
                 }
                 
-                let index = f.index(of: asset!)
+                let index = f.index(of: asset!.asset)
                 
                 guard index != NSNotFound else { return nil }
                 
@@ -219,12 +239,14 @@ extension ImageListView: UICollectionViewDelegate {
             _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
         } else if maxImage == nil || assetStore.count < maxImage! { // Select
             // Select asset if not already selected
-            assetStore.append(asset)
+            assetStore.append(asset, self.albumId)
             
-            // Set selection number
-            cell.selectionString = String(assetStore.count)
-            
-            cell.photoSelected = true
+            if maxImage != 1 {
+                // Set selection number
+                cell.selectionString = String(assetStore.count)
+                
+                cell.photoSelected = true
+            }
             _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
         }
 
