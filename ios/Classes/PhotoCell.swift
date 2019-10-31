@@ -111,6 +111,18 @@ final class PhotoCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    func singlePhotoSelected() {
+            UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
+                // Scale all views down a little
+                self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+            }, completion: { (finished: Bool) -> Void in
+                UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
+                    // And then scale them back upp again to give a bounce effect
+                    self.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+                }, completion: nil)
+            })
+    }
+    
     func updateAccessibilityLabel(_ selected: Bool) {
         self.accessibilityLabel = selected ? "deselect image" : "select image"
     }

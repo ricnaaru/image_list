@@ -71,6 +71,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
                 }
                 
                 self.assetStore.removeAll()
+                self.loadImage()
                 
                 result(nil)
             } else if call.method == "reloadAlbum" {
@@ -185,11 +186,15 @@ extension ImageListView: UICollectionViewDataSource {
         })
 
         // Set selection number
-        if let index = assetStore.assets.firstIndex(where: { $0 != nil && $0?.asset == asset }) {
-            cell.selectionString = String(index+1)
-            cell.photoSelected = true
-        } else {
+        if maxImage == 1 {
             cell.photoSelected = false
+        } else {
+            if let index = assetStore.assets.firstIndex(where: { $0 != nil && $0?.asset == asset }) {
+                cell.selectionString = String(index+1)
+                cell.photoSelected = true
+            } else {
+                cell.photoSelected = false
+            }
         }
 
         cell.isAccessibilityElement = true
@@ -212,42 +217,49 @@ extension ImageListView: UICollectionViewDelegate {
         
         let asset = f.object(at: indexPath.row)
         
-        if assetStore.contains(asset) { // Deselect
-            print("deselect")
-            // Deselect asset
-            assetStore.remove(asset)
-            
-            // Get indexPaths of selected items
-            let selectedIndexPaths = assetStore.assets.compactMap({ (asset) -> IndexPath? in
-                if asset == nil {
-                    return nil
-                }
-                
-                let index = f.index(of: asset!.asset)
-                
-                guard index != NSNotFound else { return nil }
-                
-                return IndexPath(item: index, section: 0)
-            })
-            
-            // Reload selected cells to update their selection number
-            UIView.setAnimationsEnabled(false)
-            collectionView.reloadItems(at: selectedIndexPaths)
-            UIView.setAnimationsEnabled(true)
-            
-            cell.photoSelected = false
-            _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
-        } else if maxImage == nil || assetStore.count < maxImage! { // Select
-            // Select asset if not already selected
+        if maxImage == 1 {
+            assetStore.removeAll()
             assetStore.append(asset, self.albumId)
-            
-            if maxImage != 1 {
-                // Set selection number
-                cell.selectionString = String(assetStore.count)
-                
-                cell.photoSelected = true
-            }
+            cell.singlePhotoSelected()
             _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
+        } else {
+            if assetStore.contains(asset) { // Deselect
+                print("deselect")
+                // Deselect asset
+                assetStore.remove(asset)
+                
+                // Get indexPaths of selected items
+                let selectedIndexPaths = assetStore.assets.compactMap({ (asset) -> IndexPath? in
+                    if asset == nil {
+                        return nil
+                    }
+                    
+                    let index = f.index(of: asset!.asset)
+                    
+                    guard index != NSNotFound else { return nil }
+                    
+                    return IndexPath(item: index, section: 0)
+                })
+                
+                // Reload selected cells to update their selection number
+                UIView.setAnimationsEnabled(false)
+                collectionView.reloadItems(at: selectedIndexPaths)
+                UIView.setAnimationsEnabled(true)
+                
+                cell.photoSelected = false
+                _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
+            } else if maxImage == nil || assetStore.count < maxImage! { // Select
+                // Select asset if not already selected
+                assetStore.append(asset, self.albumId)
+                
+                if maxImage != 1 {
+                    // Set selection number
+                    cell.selectionString = String(assetStore.count)
+                    
+                    cell.photoSelected = true
+                }
+                _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
+            }
         }
 
         return false

@@ -1,6 +1,14 @@
+## 0.1.3+2
+
+* iOS bugs fixed
+
+## 0.1.3+1
+
+* iOS bugs fixed
+
 ## 0.1.3
 
-* Tested on iOS
+* Adjust and tested on iOS
 
 ## 0.1.2+2
 
