@@ -13,7 +13,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
     let frame: CGRect!
     let viewId: Int64!
     var uiCollectionView: UICollectionView!
-    var f:PHFetchResult<PHAsset> = PHFetchResult()
+    var fetchedImages: PHFetchResult<PHAsset> = PHFetchResult()
     var selections: [[String: String]] = []
     var imageSize: CGSize = CGSize.zero {
         didSet {
@@ -49,10 +49,6 @@ public class ImageListView : NSObject, FlutterPlatformView {
         _channel = FlutterMethodChannel(name: "plugins.flutter.io/image_list/\(viewId)", binaryMessenger: registrar.messenger())
         
         super.init()
-        handle()
-    }
-    
-    private func handle() {
         self.uiCollectionView.allowsMultipleSelection = true
         self.uiCollectionView.dataSource = self
         self.uiCollectionView.delegate = self
@@ -60,6 +56,27 @@ public class ImageListView : NSObject, FlutterPlatformView {
         self.uiCollectionView.alwaysBounceVertical = true
         self.uiCollectionView.backgroundColor = .white
         
+        checkPermissionAndLoad()
+        
+        setup()
+    }
+    
+    private func checkPermissionAndLoad() {
+        print("checkPermissionAndLoad")
+        let photos = PHPhotoLibrary.authorizationStatus()
+        if photos == .notDetermined {
+            PHPhotoLibrary.requestAuthorization({status in
+                print("success")
+                if status == .authorized{
+                    self.loadImage()
+                }
+            })
+        } else if photos == .authorized {
+            self.loadImage()
+        }
+    }
+    
+    private func setup() {
         _channel.setMethodCallHandler { call, result in
             if call.method == "waitForList" {
                 result(nil)
@@ -80,39 +97,55 @@ public class ImageListView : NSObject, FlutterPlatformView {
                 } else {
                     self.albumId = ""
                 }
+                
                 self.loadImage()
                 
                 result(nil)
             } else if call.method == "getSelectedImages" {
-                var selectedImages: [[String: String]] = []
-                
-                if self.assetStore.assets.count == 0 {
-                    result(nil)
-                } else {
-                    for i in 0...self.assetStore.assets.count - 1 {
-                        var dict: [String: String] = [String:String]()
-                        
-                        dict["albumId"] = self.assetStore.assets[i]?.albumId
-                        dict["assetId"] = self.assetStore.assets[i]?.asset.localIdentifier
-                        selectedImages.append(dict)
+                self.getSelectedImages(result)
+            }
+        }
+    }
+    
+    private func getSelectedImages(_ flutterResult: @escaping FlutterResult) {
+        var selectedImages: [[String: String]] = []
+        
+        if self.assetStore.assets.count == 0 {
+            flutterResult(nil)
+        } else {
+            for i in 0...self.assetStore.assets.count - 1 {
+                var dict: [String: String] = [String:String]()
+                if let asset = self.assetStore.assets[i]?.asset {
+                    let option = PHContentEditingInputRequestOptions()
+                    option.isNetworkAccessAllowed = true
+                    autoreleasepool {
+                        let _ = asset.requestContentEditingInput(with: option) { (input, _) in
+                            let url = input?.fullSizeImageURL
+                            if let url = url {
+                                dict["albumId"] = self.assetStore.assets[i]?.albumId
+                                dict["assetId"] = "/private\(url.path)"
+                            
+                                selectedImages.append(dict)
+                                
+                                if selectedImages.count == self.assetStore.assets.count {
+                                    flutterResult(selectedImages)
+                                }
+                            }
+                        }
                     }
-
-                    result(selectedImages)
                 }
             }
         }
-        
-        loadImage()
     }
     
     private func loadImage() {
         let fetchOptions = PHFetchOptions()
         fetchOptions.predicate = NSPredicate(format: "localIdentifier = %@", self.albumId)
-        self.f = PHFetchResult()
+        self.fetchedImages = PHFetchResult()
         let smartAlbums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumUserLibrary, options: fetchOptions)
-    
+        
         let albums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-    
+        
         var allAlbums: Array<PHFetchResult<PHAssetCollection>> = []
         
         if smartAlbums.count > 0 {
@@ -122,21 +155,21 @@ public class ImageListView : NSObject, FlutterPlatformView {
         if albums.count > 0 {
             allAlbums.append(albums)
         }
-    
+        
         let fetchOptionsAssets = PHFetchOptions()
-    
+        
         if let album = allAlbums.first?.firstObject {
-            self.f = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
+            self.fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
         }
         
-        if self.f.count > 0 {
-            for i in 0...self.f.count - 1 {
+        if self.fetchedImages.count > 0 {
+            for i in 0...self.fetchedImages.count - 1 {
                 if self.selections.count > 0 {
                     for j in 0...self.selections.count - 1 {
-                        var x = self.selections[j]
+                        let x = self.selections[j]
                         
-                        if x["assetId"] == f[i].localIdentifier {
-                            assetStore.insert(f[i], self.albumId, at: j)
+                        if x["assetId"] == fetchedImages[i].localIdentifier {
+                            assetStore.insert(fetchedImages[i], self.albumId, at: j)
                         }
                     }
                 }
@@ -155,21 +188,21 @@ public class ImageListView : NSObject, FlutterPlatformView {
 
 extension ImageListView: UICollectionViewDataSource {
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return self.f.count
+        return self.fetchedImages.count
     }
-
+    
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         UIView.setAnimationsEnabled(false)
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PhotoCell.cellIdentifier, for: indexPath) as! PhotoCell
         cell.accessibilityIdentifier = "photo_cell_\(indexPath.item)"
         cell.isAccessibilityElement = true
-
+        
         // Cancel any pending image requests
         if cell.tag != 0 {
             photosManager.cancelImageRequest(PHImageRequestID(cell.tag))
         }
         
-        let asset = self.f[indexPath.row]
+        let asset = self.fetchedImages[indexPath.row]
         
         cell.asset = asset
         
@@ -178,13 +211,14 @@ extension ImageListView: UICollectionViewDataSource {
         }
         
         let option = PHImageRequestOptions()
-        
+
+        option.isNetworkAccessAllowed = true //(false by default)
         option.isSynchronous = false
         // Request image
         cell.tag = Int(PHCachingImageManager.default().requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: option) { (result, e) in
             cell.imageView.image = result
         })
-
+        
         // Set selection number
         if maxImage == 1 {
             cell.photoSelected = false
@@ -196,12 +230,12 @@ extension ImageListView: UICollectionViewDataSource {
                 cell.photoSelected = false
             }
         }
-
+        
         cell.isAccessibilityElement = true
         cell.accessibilityTraits = UIAccessibilityTraits.button
-
+        
         UIView.setAnimationsEnabled(true)
-
+        
         return cell
     }
     
@@ -215,7 +249,7 @@ extension ImageListView: UICollectionViewDelegate {
     public func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
         guard let cell = collectionView.cellForItem(at: indexPath) as? PhotoCell else { return false }
         
-        let asset = f.object(at: indexPath.row)
+        let asset = fetchedImages.object(at: indexPath.row)
         
         if maxImage == 1 {
             assetStore.removeAll()
@@ -224,7 +258,6 @@ extension ImageListView: UICollectionViewDelegate {
             _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
         } else {
             if assetStore.contains(asset) { // Deselect
-                print("deselect")
                 // Deselect asset
                 assetStore.remove(asset)
                 
@@ -234,7 +267,7 @@ extension ImageListView: UICollectionViewDelegate {
                         return nil
                     }
                     
-                    let index = f.index(of: asset!.asset)
+                    let index = fetchedImages.index(of: asset!.asset)
                     
                     guard index != NSNotFound else { return nil }
                     
@@ -261,7 +294,7 @@ extension ImageListView: UICollectionViewDelegate {
                 _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
             }
         }
-
+        
         return false
     }
 }
@@ -281,113 +314,3 @@ public class ImageListViewFactory : NSObject, FlutterPlatformViewFactory {
         return FlutterStandardMessageCodec.sharedInstance()
     }
 }
-
-//// MARK: UIImagePickerControllerDelegate
-//extension ImageListView: UIImagePickerControllerDelegate {
-//    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-//        guard let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage else {
-//            picker.dismiss(animated: true, completion: nil)
-//            return
-//        }
-//
-//        var placeholder: PHObjectPlaceholder?
-//        PHPhotoLibrary.shared().performChanges({
-//            let request = PHAssetChangeRequest.creationRequestForAsset(from: image)
-//            placeholder = request.placeholderForCreatedAsset
-//        }, completionHandler: { success, error in
-//            guard let placeholder = placeholder, let asset = PHAsset.fetchAssets(withLocalIdentifiers: [placeholder.localIdentifier], options: nil).firstObject, success == true else {
-//                picker.dismiss(animated: true, completion: nil)
-//                return
-//            }
-//
-//            DispatchQueue.main.async {
-//                // TODO: move to a function. this is duplicated in didSelect
-//                self.assetStore.append(asset)
-//                self.updateDoneButton()
-//
-//                // Call selection closure
-//                self.selectionClosure?(asset)
-//
-//                picker.dismiss(animated: true, completion: nil)
-//            }
-//        })
-//    }
-//
-//    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-//        picker.dismiss(animated: true, completion: nil)
-//    }
-//}
-
-//// MARK: PHPhotoLibraryChangeOb server
-//extension ImageListView: PHPhotoLibraryChangeObserver {
-//    public func photoLibraryDidChange(_ changeInstance: PHChange) {
-//        guard let collectionView = uiCollectionView else {
-//            return
-//        }
-//
-//        DispatchQueue.main.async(execute: { () -> Void in
-//            if let photosChanges = changeInstance.changeDetails(for: self.f as! PHFetchResult<PHObject>) {
-//                // Update collection view
-//                // Alright...we get spammed with change notifications, even when there are none. So guard against it
-//                let removedCount = photosChanges.removedIndexes?.count ?? 0
-//                let insertedCount = photosChanges.insertedIndexes?.count ?? 0
-//                let changedCount = photosChanges.changedIndexes?.count ?? 0
-//                if photosChanges.hasIncrementalChanges && (removedCount > 0 || insertedCount > 0 || changedCount > 0) {
-//                    // Update fetch result
-//                    self.f = photosChanges.fetchResultAfterChanges as! PHFetchResult<PHAsset>
-//
-//                    collectionView.performBatchUpdates({
-//                        if let removed = photosChanges.removedIndexes {
-//                            collectionView.deleteItems(at: removed.bs_indexPathsForSection(1))
-//                        }
-//
-//                        if let inserted = photosChanges.insertedIndexes {
-//                            collectionView.insertItems(at: inserted.bs_indexPathsForSection(1))
-//                        }
-//
-//                        if let changed = photosChanges.changedIndexes {
-//                            collectionView.reloadItems(at: changed.bs_indexPathsForSection(1))
-//                        }
-//                    })
-//
-////                     Changes is causing issues right now...fix me later
-////                     Example of issue:
-////                     1. Take a new photo
-////                     2. We will get a change telling to insert that asset
-////                     3. While it's being inserted we get a bunch of change request for that same asset
-////                     4. It flickers when reloading it while being inserted
-////                     TODO: FIX
-//                                        if let changed = photosChanges.changedIndexes {
-//                                            print("changed")
-//                                            collectionView.reloadItems(at: changed.bs_indexPathsForSection(1))
-//                                        }
-//                } else if photosChanges.hasIncrementalChanges == false {
-//                    // Update fetch result
-//                    self.f = photosChanges.fetchResultAfterChanges as! PHFetchResult<PHAsset>
-//
-//                    // Reload view
-//                    collectionView.reloadData()
-//                }
-//            }
-//        })
-//
-//
-//        // TODO: Changes in albums
-//    }
-//}
-//
-//extension IndexSet {
-//    /**
-//     - parameter section: The section for the created NSIndexPaths
-//     - return: An array with NSIndexPaths
-//     */
-//    func bs_indexPathsForSection(_ section: Int) -> [IndexPath] {
-//        var indexPaths: [IndexPath] = []
-//
-//        for value in self {
-//            indexPaths.append(IndexPath(item: value, section: section))
-//        }
-//
-//        return indexPaths
-//    }
-//}

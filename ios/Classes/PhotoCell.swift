@@ -50,9 +50,7 @@ final class PhotoCell: UICollectionViewCell {
         didSet {
             self.updateAccessibilityLabel(photoSelected)
             let hasChanged = photoSelected != oldValue
-            print("photoSelected \(photoSelected)")
-            print("hasChanged \(hasChanged)")
-            print("UIView.areAnimationsEnabled \(UIView.areAnimationsEnabled)")
+            
             if UIView.areAnimationsEnabled && hasChanged {
                 UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
                     // Set alpha for views
