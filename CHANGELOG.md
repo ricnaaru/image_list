@@ -1,3 +1,8 @@
+## 0.2.0
+
+* Add IOS Permission method
+* change file:/// to private/ on ios
+
 ## 0.1.3+2
 
 * iOS bugs fixed
