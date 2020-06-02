@@ -4,12 +4,22 @@ class ImageListPlugin {
   static const MethodChannel _channel = const MethodChannel('image_list');
 
   static Future<dynamic> getAlbums() async {
+    bool hasPermission = await checkPermission();
+
+    if (!hasPermission) return null;
+
     final List<dynamic> images = await _channel.invokeMethod('getAlbums');
     List<Album> albums = List<Album>();
     for (var element in images) {
       albums.add(Album.fromJson(element));
     }
     return albums;
+  }
+
+  static Future<dynamic> checkPermission() async {
+    final bool hasPermission = await _channel.invokeMethod('checkPermission');
+
+    return hasPermission;
   }
 }
 

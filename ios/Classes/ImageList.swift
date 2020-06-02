@@ -56,24 +56,9 @@ public class ImageListView : NSObject, FlutterPlatformView {
         self.uiCollectionView.alwaysBounceVertical = true
         self.uiCollectionView.backgroundColor = .white
         
-        checkPermissionAndLoad()
+        loadImage()
         
         setup()
-    }
-    
-    private func checkPermissionAndLoad() {
-        print("checkPermissionAndLoad")
-        let photos = PHPhotoLibrary.authorizationStatus()
-        if photos == .notDetermined {
-            PHPhotoLibrary.requestAuthorization({status in
-                print("success")
-                if status == .authorized{
-                    self.loadImage()
-                }
-            })
-        } else if photos == .authorized {
-            self.loadImage()
-        }
     }
     
     private func setup() {

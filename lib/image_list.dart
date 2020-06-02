@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_list/plugin.dart';
 
 part 'controller.dart';
 
@@ -27,9 +28,26 @@ class ImageList extends StatefulWidget {
 
 class _ImageListState extends State<ImageList> {
   Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers;
+  bool hasPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    ImageListPlugin.checkPermission().then((value) {
+      if (this.mounted)
+        setState(() {
+          hasPermission = value;
+        });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!hasPermission) {
+      return Center(child: CircularProgressIndicator());
+    }
+
     final Map<String, dynamic> creationParams = <String, dynamic>{
       "albumId": widget.albumId ?? "",
       "maxImage": widget.maxImages,

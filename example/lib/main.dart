@@ -22,11 +22,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     ImageListPlugin.getAlbums().then((albums) {
-      if (albums.length > 0)
-      setState(() {
-        this.albums = albums;
-        this.currentAlbum = albums.first;
-      });
+      if ((albums?.length ?? 0) > 0 && this.mounted)
+        setState(() {
+          this.albums = albums;
+          this.currentAlbum = albums.first;
+        });
     });
   }
 
@@ -53,7 +53,10 @@ class _MyAppState extends State<MyApp> {
                       items: albums.map<DropdownMenuItem<Album>>((Album value) {
                         return DropdownMenuItem<Album>(
                           value: value,
-                          child: Text(value.name),
+                          child: Container(
+                            width: MediaQuery.of(context).size.width - 100,
+                            child: Text(value.name, maxLines: 2),
+                          ),
                         );
                       }).toList(),
                     ),
