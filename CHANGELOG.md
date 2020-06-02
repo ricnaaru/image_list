@@ -1,3 +1,7 @@
+## 0.2.1
+
+* Add Android Permission method
+
 ## 0.2.0
 
 * Add IOS Permission method
