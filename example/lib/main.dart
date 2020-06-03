@@ -73,8 +73,7 @@ class _MyAppState extends State<MyApp> {
                       },
                     ),
                     Expanded(
-                      child: InkWell(
-                        child: ImageList(
+                      child: ImageList(
                           maxImages: 1,
                           albumId: currentAlbum?.identifier,
                           onImageTapped: (count) {
@@ -85,20 +84,13 @@ class _MyAppState extends State<MyApp> {
                           },
                           selections: _selections,
                         ),
-                        onTap: () {
-                          print("aduh di tap");
-                        },
-                      ),
                     ),
                     Padding(
                       child: FlatButton(
                         child: Text("Submit"),
                         onPressed: () {
                           this.controller.getSelectedImage().then((res) {
-                            print("res => ${res.runtimeType}");
                             File f = File(res.first.assetId);
-                            print("res.first.assetId => ${f.path}");
-                            print("f => ${f.existsSync()}");
                             Navigator.push(context, MaterialPageRoute(
                                 builder: (BuildContext context) {
                               return Test(file: f);
