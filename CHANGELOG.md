@@ -1,3 +1,7 @@
+## 0.2.1+1
+
+* Clean up unnecessary scripts
+
 ## 0.2.1
 
 * Add Android Permission method
