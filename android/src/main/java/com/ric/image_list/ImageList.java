@@ -4,9 +4,12 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -17,10 +20,19 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import io.flutter.plugin.common.MethodCall;
@@ -38,6 +50,8 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private Long bucketId = 0L;
     private String albumId;
     private Integer maxImage;
+    private Integer maxSize;
+    private String fileNamePrefix;
     private boolean disposed = false;
     private View view;
     private ArrayList<ImageData> selectedImages = new ArrayList<>();
@@ -62,6 +76,8 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             Map<String, Object> params = (Map<String, Object>) args;
             albumId = params.get("albumId").toString();
             maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
+            maxSize = params.get("maxSize") == null ? null : Integer.valueOf(params.get("maxSize").toString());
+            fileNamePrefix = params.get("fileNamePrefix").toString();
 
             if (params.get("selections") != null) {
                 List selections = (ArrayList) params.get("selections");
@@ -166,14 +182,60 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             for (int i = 0; i < adapter.selectedImages.size(); i++) {
                 ImageData data = adapter.selectedImages.get(i);
 
+                Log.d("ricric", "albumId => " + data.getAlbumId() + ", assetId => " + data.getAssetId() + ", uri => " + data.getUri().toString());
+
+                String newPath = copyAndResizeFile(data.getAssetId());
+
                 Map<String, String> map = new HashMap<>();
-                map.put("albumId", data.getAlbumId());
-                map.put("assetId", data.getAssetId());
+                map.put("albumId", null);
+                map.put("assetId", newPath);
                 map.put("uri", data.getUri().toString());
                 imageIdList.add(map);
             }
 
             result.success(imageIdList);
+        }
+    }
+
+    public String copyAndResizeFile(String srcUrl) {
+        Date currentTime = Calendar.getInstance().getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        File folder = new File(Environment.getExternalStorageDirectory() + "/images");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+
+        Bitmap bitmap = BitmapFactory.decodeFile(srcUrl);
+        if (maxSize != null) {
+            double initialWidth = bitmap.getWidth();
+            double initialHeight = bitmap.getHeight();
+            int width = initialHeight < initialWidth ? maxSize : (int) (initialWidth / initialHeight * maxSize);
+            int height = initialWidth <= initialHeight ? maxSize : (int) (initialHeight / initialWidth * maxSize);
+
+            bitmap = Bitmap.createScaledBitmap(bitmap, width,
+                    height, true);
+        }
+
+        File destination = new File(folder.getAbsolutePath(), fileNamePrefix + "_" + dateFormat.format(currentTime) + ".jpg");
+
+        getSavePhotoLocal(bitmap, destination);
+
+        return destination.getAbsolutePath();
+    }
+
+    private void getSavePhotoLocal(Bitmap bitmap, File destination) {
+        try {
+            OutputStream output;
+            try {
+                output = new FileOutputStream(destination);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+                output.flush();
+                output.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
