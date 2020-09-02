@@ -1,11 +1,11 @@
 name: image_list
 description: A tappable list of images
 version: 0.2.2
-author: Richardo Thayeb <richardothayeb@gmail.com>
 homepage: https://github.com/ricnaaru/image_list
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
+  flutter: ">=1.12.0 <2.0.0"
 
 dependencies:
   flutter:
@@ -25,8 +25,12 @@ flutter:
   # be modified. They are used by the tooling to maintain consistency when
   # adding or updating assets for this project.
   plugin:
-    androidPackage: com.ric.image_list
-    pluginClass: ImageListPlugin
+    platforms:
+      android:
+        package: com.ric.image_list
+        pluginClass: ImageListPlugin
+      ios:
+        pluginClass: ImageListPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
