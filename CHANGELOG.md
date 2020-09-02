@@ -1,5 +1,9 @@
 ## 0.2.2
 
+* Add maxSize and filePrefixName for IOS
+
+## 0.2.2
+
 * Add maxSize and filePrefixName
 
 ## 0.2.1+1
