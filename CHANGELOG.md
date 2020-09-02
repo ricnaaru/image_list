@@ -1,3 +1,7 @@
+## 0.2.2
+
+* Add maxSize and filePrefixName
+
 ## 0.2.1+1
 
 * Clean up unnecessary scripts
