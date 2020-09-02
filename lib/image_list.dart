@@ -16,11 +16,14 @@ typedef void ImageTappedCallback(int count);
 class ImageList extends StatefulWidget {
   final String albumId;
   final int maxImages;
+  final int maxSize;
+  final String fileNamePrefix;
   final List<ImageData> selections;
   final ListCreatedCallback onListCreated;
   final ImageTappedCallback onImageTapped;
 
-  ImageList({this.albumId, this.maxImages, this.selections, this.onListCreated, this.onImageTapped});
+  ImageList(
+      {this.albumId, this.maxImages, this.maxSize, this.selections, this.fileNamePrefix, this.onListCreated, this.onImageTapped,});
 
   @override
   _ImageListState createState() => _ImageListState();
@@ -51,7 +54,10 @@ class _ImageListState extends State<ImageList> {
     final Map<String, dynamic> creationParams = <String, dynamic>{
       "albumId": widget.albumId ?? "",
       "maxImage": widget.maxImages,
-      "selections": widget.selections == null ? null : widget.selections.map((imageData) => imageData.toMap()).toList(),
+      "maxSize": widget.maxSize,
+      "fileNamePrefix": widget.fileNamePrefix,
+      "selections": widget.selections == null ? null : widget.selections.map((
+          imageData) => imageData.toMap()).toList(),
     };
 
     if (defaultTargetPlatform == TargetPlatform.android) {
