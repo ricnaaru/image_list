@@ -28,26 +28,31 @@ public class ImageListView : NSObject, FlutterPlatformView {
     
     let assetStore: AssetStore
     var albumId: String = ""
+    var maxSize: Int?
     var maxImage: Int?
-    
+    var fileNamePrefix: String = ""
+
     init(_ frame: CGRect, viewId: Int64, args: Any?, with registrar: FlutterPluginRegistrar) {
         self.frame = frame
         self.viewId = viewId
-        
+
         let x = GridCollectionViewLayout()
         x.itemsPerRow = 3
-        
+
         if let dict = args as? [String: Any] {
             self.selections = dict["selections"] as? [[String: String]] ?? []
             self.albumId = (dict["albumId"] as? String)!
             self.maxImage = dict["maxImage"] as? Int
+            self.maxSize = dict["maxSize"] as? Int
+            self.fileNamePrefix = (dict["fileNamePrefix"] as? String)!
+
         }
-        
+
         assetStore = AssetStore(assets: [Asset?](repeating: nil, count: selections.count))
-        
+
         self.uiCollectionView = UICollectionView(frame: frame, collectionViewLayout: x)
         _channel = FlutterMethodChannel(name: "plugins.flutter.io/image_list/\(viewId)", binaryMessenger: registrar.messenger())
-        
+
         super.init()
         self.uiCollectionView.allowsMultipleSelection = true
         self.uiCollectionView.dataSource = self
@@ -55,12 +60,12 @@ public class ImageListView : NSObject, FlutterPlatformView {
         self.registerCellIdentifiersForCollectionView(self.uiCollectionView)
         self.uiCollectionView.alwaysBounceVertical = true
         self.uiCollectionView.backgroundColor = .white
-        
+
         loadImage()
-        
+
         setup()
     }
-    
+
     private func setup() {
         _channel.setMethodCallHandler { call, result in
             if call.method == "waitForList" {
@@ -71,10 +76,10 @@ public class ImageListView : NSObject, FlutterPlatformView {
                 } else {
                     self.maxImage = 0
                 }
-                
+
                 self.assetStore.removeAll()
                 self.loadImage()
-                
+
                 result(nil)
             } else if call.method == "reloadAlbum" {
                 if let dict = call.arguments as? [String: Any] {
@@ -82,19 +87,89 @@ public class ImageListView : NSObject, FlutterPlatformView {
                 } else {
                     self.albumId = ""
                 }
-                
+
                 self.loadImage()
-                
+
                 result(nil)
             } else if call.method == "getSelectedImages" {
                 self.getSelectedImages(result)
             }
         }
     }
-    
+
+    private func secureCopyItem(at srcURL: URL) -> String? {
+
+        let pathWithoutExtension = srcURL.deletingPathExtension().path
+        let fileExtension = srcURL.path.replacingOccurrences(of: pathWithoutExtension, with: "")
+
+        guard let directory = try? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false) as NSURL else {
+            return nil
+        }
+
+        let timestamp = NSDate().timeIntervalSince1970
+        let myTimeInterval = TimeInterval(timestamp)
+        let time = NSDate(timeIntervalSince1970: TimeInterval(myTimeInterval))
+        let dateFormatterGet = DateFormatter()
+        dateFormatterGet.dateFormat = "yyyyMMdd_HHmmss"
+
+        let fileURL = directory.appendingPathComponent("\(self.fileNamePrefix)_\(dateFormatterGet.string(from: time as Date))\(fileExtension)")
+
+        if let fileURL = fileURL {
+            do {
+                print("valid fileURL")
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    try FileManager.default.removeItem(at: fileURL)
+                }
+
+                let image = UIImage(contentsOfFile: srcURL.path)
+
+                if let image = image {
+                    let resizedImage = resizeImage(image: image)!
+
+                    if fileExtension.lowercased() == ".png" {
+                        if let data = resizedImage.pngData() {
+                            try? data.write(to: fileURL)
+                        }
+                    } else if fileExtension.lowercased() == ".jpg" || fileExtension.lowercased() == ".jpeg" {
+                        if let data = resizedImage.jpegData(compressionQuality: 1) {
+                            try? data.write(to: fileURL)
+                        }
+                    } else {
+                        return nil
+                    }
+
+                    return fileURL.path
+                } else {
+                    return nil
+                }
+            } catch (let error) {
+                print("Cannot copy item at \(srcURL) to \(fileURL): \(error)")
+                return nil
+            }
+        } else {
+            print("Failed to initialize destination file name")
+            return nil
+        }
+    }
+
+    func resizeImage(image: UIImage) -> UIImage! {
+        if (self.maxSize == nil) {
+            return image
+        }
+        let scale = CGFloat(self.maxSize!) / image.size.width
+        let newWidth = image.size.width * scale
+        let newHeight = image.size.height * scale
+        UIGraphicsBeginImageContext(CGSize(width: newWidth, height: newHeight))
+        image.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return newImage
+    }
+
     private func getSelectedImages(_ flutterResult: @escaping FlutterResult) {
         var selectedImages: [[String: String]] = []
-        
+
         if self.assetStore.assets.count == 0 {
             flutterResult(nil)
         } else {
@@ -107,13 +182,16 @@ public class ImageListView : NSObject, FlutterPlatformView {
                         let _ = asset.requestContentEditingInput(with: option) { (input, _) in
                             let url = input?.fullSizeImageURL
                             if let url = url {
-                                dict["albumId"] = self.assetStore.assets[i]?.albumId
-                                dict["assetId"] = "/private\(url.path)"
-                            
-                                selectedImages.append(dict)
-                                
-                                if selectedImages.count == self.assetStore.assets.count {
-                                    flutterResult(selectedImages)
+                                dict["albumId"] = nil
+                                let newFile = self.secureCopyItem(at: url)
+                                if let newFile = newFile {
+                                    dict["assetId"] = "\(newFile)"
+
+                                    selectedImages.append(dict)
+
+                                    if selectedImages.count == self.assetStore.assets.count {
+                                        flutterResult(selectedImages)
+                                    }
                                 }
                             }
                         }
@@ -122,37 +200,37 @@ public class ImageListView : NSObject, FlutterPlatformView {
             }
         }
     }
-    
+
     private func loadImage() {
         let fetchOptions = PHFetchOptions()
         fetchOptions.predicate = NSPredicate(format: "localIdentifier = %@", self.albumId)
         self.fetchedImages = PHFetchResult()
         let smartAlbums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumUserLibrary, options: fetchOptions)
-        
+
         let albums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-        
+
         var allAlbums: Array<PHFetchResult<PHAssetCollection>> = []
-        
+
         if smartAlbums.count > 0 {
             allAlbums.append(smartAlbums)
         }
-        
+
         if albums.count > 0 {
             allAlbums.append(albums)
         }
-        
+
         let fetchOptionsAssets = PHFetchOptions()
-        
+
         if let album = allAlbums.first?.firstObject {
             self.fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
         }
-        
+
         if self.fetchedImages.count > 0 {
             for i in 0...self.fetchedImages.count - 1 {
                 if self.selections.count > 0 {
                     for j in 0...self.selections.count - 1 {
                         let x = self.selections[j]
-                        
+
                         if x["assetId"] == fetchedImages[i].localIdentifier {
                             assetStore.insert(fetchedImages[i], self.albumId, at: j)
                         }
@@ -160,12 +238,12 @@ public class ImageListView : NSObject, FlutterPlatformView {
                 }
             }
         }
-        
+
         DispatchQueue.main.async {
             self.uiCollectionView.reloadData()
         }
     }
-    
+
     public func view() -> UIView {
         return self.uiCollectionView
     }
@@ -175,26 +253,26 @@ extension ImageListView: UICollectionViewDataSource {
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return self.fetchedImages.count
     }
-    
+
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         UIView.setAnimationsEnabled(false)
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PhotoCell.cellIdentifier, for: indexPath) as! PhotoCell
         cell.accessibilityIdentifier = "photo_cell_\(indexPath.item)"
         cell.isAccessibilityElement = true
-        
+
         // Cancel any pending image requests
         if cell.tag != 0 {
             photosManager.cancelImageRequest(PHImageRequestID(cell.tag))
         }
-        
+
         let asset = self.fetchedImages[indexPath.row]
-        
+
         cell.asset = asset
-        
+
         if let collectionViewFlowLayout = self.uiCollectionView.collectionViewLayout as? GridCollectionViewLayout {
             self.imageSize = collectionViewFlowLayout.itemSize
         }
-        
+
         let option = PHImageRequestOptions()
 
         option.isNetworkAccessAllowed = true //(false by default)
