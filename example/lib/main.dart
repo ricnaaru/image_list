@@ -23,7 +23,6 @@ class _MyAppState extends State<MyApp> {
     super.initState();
 
     ImageListPlugin.getAlbums().then((albums) {
-      print("albums => $albums");
       if (this.mounted)
         setState(() {
           this.albums = albums;
@@ -38,7 +37,7 @@ class _MyAppState extends State<MyApp> {
       builder: (BuildContext context) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Plugin example app'),
+            title: const Text('Image List Example'),
           ),
           body: albums == null
               ? Center(child: CircularProgressIndicator())
@@ -98,13 +97,15 @@ class _MyAppState extends State<MyApp> {
                         onPressed: () {
                           this.controller.getSelectedImage().then((res) {
                             File f = File(res.first.assetId);
-                            Navigator.push(context, MaterialPageRoute(
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
                                 builder: (BuildContext context) {
-                              return Test(file: f);
-                            }));
-//                          _selections = res.map((map) {
-//                            return ImageData.fromJson(map);
-//                          }).toList();
+                                  return ResultPreviewPage(file: f);
+                                },
+                              ),
+                            );
                           });
                         },
                       ),
@@ -118,10 +119,10 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class Test extends StatelessWidget {
+class ResultPreviewPage extends StatelessWidget {
   final File file;
 
-  const Test({Key key, this.file}) : super(key: key);
+  const ResultPreviewPage({Key key, this.file}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
