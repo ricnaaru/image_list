@@ -22,8 +22,15 @@ class ImageList extends StatefulWidget {
   final ListCreatedCallback onListCreated;
   final ImageTappedCallback onImageTapped;
 
-  ImageList(
-      {this.albumId, this.maxImages, this.maxSize, this.selections, this.fileNamePrefix, this.onListCreated, this.onImageTapped,});
+  ImageList({
+    @required this.albumId,
+    this.maxImages,
+    this.maxSize,
+    this.selections,
+    @required this.fileNamePrefix,
+    this.onListCreated,
+    this.onImageTapped,
+  });
 
   @override
   _ImageListState createState() => _ImageListState();
@@ -56,8 +63,9 @@ class _ImageListState extends State<ImageList> {
       "maxImage": widget.maxImages,
       "maxSize": widget.maxSize,
       "fileNamePrefix": widget.fileNamePrefix,
-      "selections": widget.selections == null ? null : widget.selections.map((
-          imageData) => imageData.toMap()).toList(),
+      "selections": widget.selections == null
+          ? null
+          : widget.selections.map((imageData) => imageData.toMap()).toList(),
     };
 
     if (defaultTargetPlatform == TargetPlatform.android) {

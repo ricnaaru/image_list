@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_list/plugin.dart';
 import 'package:image_list/image_list.dart';
+import 'package:image_list/plugin.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,11 +21,13 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+
     ImageListPlugin.getAlbums().then((albums) {
-      if ((albums?.length ?? 0) > 0 && this.mounted)
+      print("albums => $albums");
+      if (this.mounted)
         setState(() {
           this.albums = albums;
-          this.currentAlbum = albums.first;
+          if (this.albums.isNotEmpty) this.currentAlbum = albums.first;
         });
     });
   }
@@ -42,24 +44,28 @@ class _MyAppState extends State<MyApp> {
               ? Center(child: CircularProgressIndicator())
               : Column(
                   children: [
-                    DropdownButton<Album>(
-                      value: currentAlbum,
-                      onChanged: (Album newAlbum) {
-                        this.currentAlbum = newAlbum;
-                        setState(() {
-                          this.controller.reloadAlbum(currentAlbum.identifier);
-                        });
-                      },
-                      items: albums.map<DropdownMenuItem<Album>>((Album value) {
-                        return DropdownMenuItem<Album>(
-                          value: value,
-                          child: Container(
-                            width: MediaQuery.of(context).size.width - 100,
-                            child: Text(value.name, maxLines: 2),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                    if (currentAlbum != null)
+                      DropdownButton<Album>(
+                        value: currentAlbum,
+                        onChanged: (Album newAlbum) {
+                          this.currentAlbum = newAlbum;
+                          setState(() {
+                            this
+                                .controller
+                                .reloadAlbum(currentAlbum.identifier);
+                          });
+                        },
+                        items:
+                            albums.map<DropdownMenuItem<Album>>((Album value) {
+                          return DropdownMenuItem<Album>(
+                            value: value,
+                            child: Container(
+                              width: MediaQuery.of(context).size.width - 100,
+                              child: Text(value.name, maxLines: 2),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     FlatButton(
                       child: Text(multipleMode ? "Set Single" : "Set Multiple"),
                       onPressed: () {
@@ -74,16 +80,17 @@ class _MyAppState extends State<MyApp> {
                     ),
                     Expanded(
                       child: ImageList(
-                          maxImages: 1,
-                          albumId: currentAlbum?.identifier,
-                          onImageTapped: (count) {
-                            print("onImageTapped => $count");
-                          },
-                          onListCreated: (controller) {
-                            this.controller = controller;
-                          },
-                          selections: _selections,
-                        ),
+                        maxImages: 1,
+                        albumId: currentAlbum?.identifier ?? "",
+                        onImageTapped: (count) {
+                          print("onImageTapped => $count");
+                        },
+                        onListCreated: (controller) {
+                          this.controller = controller;
+                        },
+                        selections: _selections,
+                        fileNamePrefix: "AdvImageExample",
+                      ),
                     ),
                     Padding(
                       child: FlatButton(
