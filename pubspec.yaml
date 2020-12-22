@@ -1,6 +1,6 @@
 name: image_list
 description: A tappable list of images
-version: 0.2.2+2
+version: 1.0.0
 homepage: https://github.com/ricnaaru/image_list
 
 environment:
