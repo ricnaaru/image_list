@@ -9,7 +9,7 @@ class ImageListController {
   ImageListController._(
     this.channel,
     this._imageListState,
-  ) : assert(channel != null) {
+  ) {
     channel.setMethodCallHandler(_handleMethodCall);
   }
 
@@ -17,11 +17,8 @@ class ImageListController {
     int id,
     _ImageListState imageListState,
   ) async {
-    assert(id != null);
     final MethodChannel channel = MethodChannel('plugins.flutter.io/image_list/$id');
-    // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
-    // https://github.com/flutter/flutter/issues/26431
-    // ignore: strong_mode_implicit_dynamic_method
+
     await channel.invokeMethod('waitForList');
     return ImageListController._(
       channel,
@@ -38,7 +35,7 @@ class ImageListController {
     switch (call.method) {
       case 'onImageTapped':
         int count = call.arguments['count'] as int;
-        _imageListState.onImageTapped(count ?? 0);
+        _imageListState.onImageTapped(count);
         break;
       default:
         throw MissingPluginException();
@@ -50,29 +47,20 @@ class ImageListController {
   /// The returned [Future] completes after the change has been started on the
   /// platform side.
   Future<void> reloadAlbum(String albumId) async {
-    // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
-    // https://github.com/flutter/flutter/issues/26431
-    // ignore: strong_mode_implicit_dynamic_method
     await channel.invokeMethod('reloadAlbum', <String, dynamic>{
       'albumId': albumId,
     });
   }
 
-  Future<void> setMaxImage(int maxImage) async {
-    // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
-    // https://github.com/flutter/flutter/issues/26431
-    // ignore: strong_mode_implicit_dynamic_method
+  Future<void> setMaxImage(int? maxImage) async {
     await channel.invokeMethod('setMaxImage', <String, dynamic>{
       'maxImage': maxImage,
     });
   }
 
-  Future<List<ImageData>> getSelectedImage() async {
-    // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
-    // https://github.com/flutter/flutter/issues/26431
-    // ignore: strong_mode_implicit_dynamic_method
-    List<ImageData> result;
-    List<dynamic> raw = await channel.invokeMethod('getSelectedImages', null);
+  Future<List<ImageData>?> getSelectedImage() async {
+    List<ImageData>? result;
+    List<dynamic>? raw = await channel.invokeMethod('getSelectedImages', null);
 
     if (raw != null) {
       result = raw.map((map) {
@@ -88,7 +76,7 @@ class ImageData {
   final String assetId;
   final String uri;
 
-  ImageData({this.albumId, this.assetId, this.uri});
+  ImageData({required this.albumId, required this.assetId, required this.uri});
 
   Map toMap() {
     return {

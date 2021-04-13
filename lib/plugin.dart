@@ -4,12 +4,13 @@ class ImageListPlugin {
   static const MethodChannel _channel = const MethodChannel('image_list');
 
   static Future<dynamic> getAlbums() async {
+    print("getAlbums");
     bool hasPermission = await checkPermission();
-
+print("checkPermission");
     if (!hasPermission) return null;
 
     final List<dynamic> images = await _channel.invokeMethod('getAlbums');
-    List<Album> albums = List<Album>();
+    List<Album> albums = <Album>[];
     for (var element in images) {
       albums.add(Album.fromJson(element));
     }
@@ -34,7 +35,8 @@ class Album {
   }
 
   Album copyWith({
-    String name, String identifier,
+    String? name,
+    String? identifier,
   }) {
     return Album(
       name ?? this.name,
@@ -46,6 +48,4 @@ class Album {
   String toString() {
     return "Album(name: $name, identifier: $identifier)";
   }
-
-
 }

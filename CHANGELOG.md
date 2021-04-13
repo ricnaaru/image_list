@@ -1,3 +1,7 @@
+## 2.0.0-nullsafety
+
+* Migrate to Null Safety
+
 ## 1.0.0
 
 * Add some required validation, and some tidy ups

@@ -12,21 +12,26 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  List<Album> albums;
-  ImageListController controller;
-  Album currentAlbum;
-  List<ImageData> _selections;
+  List<Album>? albums;
+  ImageListController? controller;
+  Album? currentAlbum;
+  List<ImageData>? _selections;
   bool multipleMode = false;
+  bool initialized = false;
 
   @override
   void initState() {
     super.initState();
+    print("ImageListPlugin.getAlbums()");
 
     ImageListPlugin.getAlbums().then((albums) {
+      print("albums => $albums");
       if (this.mounted)
         setState(() {
+          this.initialized = true;
           this.albums = albums;
-          if (this.albums.isNotEmpty) this.currentAlbum = albums.first;
+          if (this.albums != null && this.albums!.isNotEmpty)
+            this.currentAlbum = albums.first;
         });
     });
   }
@@ -39,23 +44,26 @@ class _MyAppState extends State<MyApp> {
           appBar: AppBar(
             title: const Text('Image List Example'),
           ),
-          body: albums == null
+          body: !initialized
               ? Center(child: CircularProgressIndicator())
+              : albums == null
+              ? Center(child: Text('Could not load images'))
               : Column(
                   children: [
                     if (currentAlbum != null)
                       DropdownButton<Album>(
                         value: currentAlbum,
-                        onChanged: (Album newAlbum) {
+                        onChanged: (Album? newAlbum) {
                           this.currentAlbum = newAlbum;
                           setState(() {
-                            this
-                                .controller
-                                .reloadAlbum(currentAlbum.identifier);
+                            if (controller != null && currentAlbum != null)
+                              this
+                                  .controller!
+                                  .reloadAlbum(currentAlbum!.identifier);
                           });
                         },
                         items:
-                            albums.map<DropdownMenuItem<Album>>((Album value) {
+                            albums!.map<DropdownMenuItem<Album>>((Album value) {
                           return DropdownMenuItem<Album>(
                             value: value,
                             child: Container(
@@ -65,14 +73,14 @@ class _MyAppState extends State<MyApp> {
                           );
                         }).toList(),
                       ),
-                    FlatButton(
+                    TextButton(
                       child: Text(multipleMode ? "Set Single" : "Set Multiple"),
                       onPressed: () {
                         setState(() {
                           multipleMode = !multipleMode;
                           if (this.controller != null)
                             this
-                                .controller
+                                .controller!
                                 .setMaxImage(multipleMode ? null : 1);
                         });
                       },
@@ -92,24 +100,27 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                     Padding(
-                      child: FlatButton(
+                      padding: EdgeInsets.all(16.0),
+                      child: TextButton(
                         child: Text("Submit"),
                         onPressed: () {
-                          this.controller.getSelectedImage().then((res) {
-                            File f = File(res.first.assetId);
+                          if (this.controller != null)
+                            this.controller!.getSelectedImage().then((res) {
+                              if (res == null) return;
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return ResultPreviewPage(file: f);
-                                },
-                              ),
-                            );
-                          });
+                              File f = File(res.first.assetId);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (BuildContext context) {
+                                    return ResultPreviewPage(file: f);
+                                  },
+                                ),
+                              );
+                            });
                         },
                       ),
-                      padding: EdgeInsets.all(16.0),
                     )
                   ],
                 ),
@@ -122,7 +133,7 @@ class _MyAppState extends State<MyApp> {
 class ResultPreviewPage extends StatelessWidget {
   final File file;
 
-  const ResultPreviewPage({Key key, this.file}) : super(key: key);
+  const ResultPreviewPage({Key? key, required this.file}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

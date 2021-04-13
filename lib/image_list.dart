@@ -14,20 +14,20 @@ typedef void ListCreatedCallback(ImageListController controller);
 typedef void ImageTappedCallback(int count);
 
 class ImageList extends StatefulWidget {
-  final String albumId;
+  final String? albumId;
   final int maxImages;
-  final int maxSize;
+  final int? maxSize;
   final String fileNamePrefix;
-  final List<ImageData> selections;
-  final ListCreatedCallback onListCreated;
-  final ImageTappedCallback onImageTapped;
+  final List<ImageData>? selections;
+  final ListCreatedCallback? onListCreated;
+  final ImageTappedCallback? onImageTapped;
 
   ImageList({
-    @required this.albumId,
-    this.maxImages,
+    this.albumId,
+    this.maxImages = 1,
     this.maxSize,
     this.selections,
-    @required this.fileNamePrefix,
+    required this.fileNamePrefix,
     this.onListCreated,
     this.onImageTapped,
   });
@@ -37,7 +37,7 @@ class ImageList extends StatefulWidget {
 }
 
 class _ImageListState extends State<ImageList> {
-  Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers;
+  Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers;
   bool hasPermission = false;
 
   @override
@@ -65,7 +65,7 @@ class _ImageListState extends State<ImageList> {
       "fileNamePrefix": widget.fileNamePrefix,
       "selections": widget.selections == null
           ? null
-          : widget.selections.map((imageData) => imageData.toMap()).toList(),
+          : widget.selections!.map((imageData) => imageData.toMap()).toList(),
     };
 
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -85,6 +85,8 @@ class _ImageListState extends State<ImageList> {
         creationParamsCodec: const StandardMessageCodec(),
       );
     }
+
+    return Container();
   }
 
   Future<void> onPlatformViewCreated(int id) async {
@@ -94,13 +96,13 @@ class _ImageListState extends State<ImageList> {
     );
 
     if (widget.onListCreated != null) {
-      widget.onListCreated(controller);
+      widget.onListCreated!(controller);
     }
   }
 
   void onImageTapped(int count) {
     if (widget.onImageTapped != null) {
-      widget.onImageTapped(count);
+      widget.onImageTapped!(count);
     }
   }
 }

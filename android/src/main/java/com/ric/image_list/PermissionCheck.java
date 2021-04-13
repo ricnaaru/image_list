@@ -6,16 +6,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.widget.Toast;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import android.util.Log;
-import android.widget.Toast;
-
-
-/**
- * Created by sangc on 2015-10-12.
- */
 public class PermissionCheck {
     public final int PERMISSION_STORAGE = 28;
     private Context context;
@@ -23,7 +18,6 @@ public class PermissionCheck {
     public PermissionCheck(Context context) {
         this.context = context;
     }
-
 
     @TargetApi(Build.VERSION_CODES.M)
     public boolean CheckStoragePermission() {

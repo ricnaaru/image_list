@@ -1,5 +1,6 @@
 package com.ric.image_list;
 
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -12,6 +13,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -35,15 +37,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.platform.PlatformView;
 
 public class ImageList implements MethodChannel.MethodCallHandler,
-        PlatformView {
+        PlatformView, ActivityAware {
     private final MethodChannel methodChannel;
-    private PluginRegistry.Registrar registrar;
+    private BinaryMessenger messenger;
     private final Context context;
     private RecyclerView recyclerView;
     private GridLayoutManager layoutManager;
@@ -59,16 +64,17 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     ImageList(
             int id,
             final Context context,
-            PluginRegistry.Registrar registrar, Object args) {
+            BinaryMessenger messenger,
+             Object args) {
         this.context = context;
-        this.registrar = registrar;
+        this.messenger = messenger;
         methodChannel =
-                new MethodChannel(registrar.messenger(), "plugins.flutter.io/image_list/" + id);
+                new MethodChannel(messenger, "plugins.flutter.io/image_list/" + id);
         methodChannel.setMethodCallHandler(this);
-        view = registrar.activity().getLayoutInflater().inflate(R.layout.image_list, null);
+        view = LayoutInflater.from(context).inflate(R.layout.image_list, null);
 
         recyclerView = view.findViewById(R.id.rv_image_list);//new RecyclerView(context);
-        layoutManager = new GridLayoutManager(registrar.activity(), 3, RecyclerView.VERTICAL, false);
+        layoutManager = new GridLayoutManager(context, 3, RecyclerView.VERTICAL, false);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.requestDisallowInterceptTouchEvent(true);
 
@@ -98,37 +104,16 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         if (checkPermission()) {
             new DisplayImage(context, this, bucketId, true).execute();
         }
-
-        registrar.addRequestPermissionsResultListener(new PluginRegistry.RequestPermissionsResultListener() {
-            @Override
-            public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-                if (requestCode == 28) {
-                    if (grantResults.length > 0) {
-                        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            // permission was granted, yay!
-                            getAlbums();
-                            new DisplayImage(context, ImageList.this, bucketId, true).execute();
-                        } else {
-                            new PermissionCheck(context).showPermissionDialog();
-                        }
-                    }
-                }
-                return false;
-            }
-        });
     }
 
     private boolean checkPermission() {
-        PermissionCheck permissionCheck = new PermissionCheck(registrar.activity());
+        PermissionCheck permissionCheck = new PermissionCheck(context);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (permissionCheck.CheckStoragePermission()) {
-                return true;
-            }
+            return permissionCheck.CheckStoragePermission();
         } else {
             return true;
         }
-
-        return false;
     }
 
     private void getAlbums() {
@@ -152,48 +137,53 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     }
 
     @Override
-    public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
-        if (methodCall.method.equals("waitForList")) {
-            result.success(null);
-        } else if (methodCall.method.equals("setMaxImage")) {
-            if (methodCall.arguments instanceof HashMap) {
-                Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
-                maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
-                adapter.setMaxSelected(maxImage);
-                adapter.notifyDataSetChanged();
-            }
+    public void onMethodCall(MethodCall methodCall, @NonNull MethodChannel.Result result) {
+        switch (methodCall.method) {
+            case "waitForList":
+                result.success(null);
+                break;
+            case "setMaxImage":
+                if (methodCall.arguments instanceof HashMap) {
+                    Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
+                    maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
+                    adapter.setMaxSelected(maxImage);
+                    adapter.notifyDataSetChanged();
+                }
 
-            result.success(true);
-        } else if (methodCall.method.equals("reloadAlbum")) {
-            if (methodCall.arguments instanceof HashMap) {
-                Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
-                albumId = params.get("albumId").toString();
-                getAlbums();
-            }
+                result.success(true);
+                break;
+            case "reloadAlbum":
+                if (methodCall.arguments instanceof HashMap) {
+                    Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
+                    albumId = params.get("albumId").toString();
+                    getAlbums();
+                }
 
-            if (checkPermission()) {
-                new DisplayImage(context, this, bucketId, true).execute();
-            }
+                if (checkPermission()) {
+                    new DisplayImage(context, this, bucketId, true).execute();
+                }
 
-            result.success(true);
-        } else if (methodCall.method.equals("getSelectedImages")) {
-            List<Map<String, String>> imageIdList = new ArrayList<>();
+                result.success(true);
+                break;
+            case "getSelectedImages":
+                List<Map<String, String>> imageIdList = new ArrayList<>();
 
-            for (int i = 0; i < adapter.selectedImages.size(); i++) {
-                ImageData data = adapter.selectedImages.get(i);
+                for (int i = 0; i < adapter.selectedImages.size(); i++) {
+                    ImageData data = adapter.selectedImages.get(i);
 
-                Log.d("ricric", "albumId => " + data.getAlbumId() + ", assetId => " + data.getAssetId() + ", uri => " + data.getUri().toString());
+                    Log.d("ricric", "albumId => " + data.getAlbumId() + ", assetId => " + data.getAssetId() + ", uri => " + data.getUri().toString());
 
-                String newPath = copyAndResizeFile(data.getAssetId());
+                    String newPath = copyAndResizeFile(data.getAssetId());
 
-                Map<String, String> map = new HashMap<>();
-                map.put("albumId", null);
-                map.put("assetId", newPath);
-                map.put("uri", data.getUri().toString());
-                imageIdList.add(map);
-            }
+                    Map<String, String> map = new HashMap<>();
+                    map.put("albumId", null);
+                    map.put("assetId", newPath);
+                    map.put("uri", data.getUri().toString());
+                    imageIdList.add(map);
+                }
 
-            result.success(imageIdList);
+                result.success(imageIdList);
+                break;
         }
     }
 
@@ -294,6 +284,58 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 }
             }
         }
+    }
+
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        binding.addRequestPermissionsResultListener(new PluginRegistry.RequestPermissionsResultListener() {
+            @Override
+            public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                if (requestCode == 28) {
+                    if (grantResults.length > 0) {
+                        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                            // permission was granted, yay!
+                            getAlbums();
+                            new DisplayImage(context, ImageList.this, bucketId, true).execute();
+                        } else {
+                            new PermissionCheck(context).showPermissionDialog();
+                        }
+                    }
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        binding.addRequestPermissionsResultListener(new PluginRegistry.RequestPermissionsResultListener() {
+            @Override
+            public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                if (requestCode == 28) {
+                    if (grantResults.length > 0) {
+                        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                            // permission was granted, yay!
+                            getAlbums();
+                            new DisplayImage(context, ImageList.this, bucketId, true).execute();
+                        } else {
+                            new PermissionCheck(context).showPermissionDialog();
+                        }
+                    }
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+
     }
 }
 
