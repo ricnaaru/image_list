@@ -108,7 +108,7 @@ class _MyAppState extends State<MyApp> {
                             this.controller!.getSelectedImage().then((res) {
                               if (res == null) return;
 
-                              File f = File(res.first.assetId);
+                              File f = File(res.first.assetId!);
 
                               Navigator.push(
                                 context,

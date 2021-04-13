@@ -72,7 +72,7 @@ class ImageListController {
 }
 
 class ImageData {
-  final String albumId;
+  final String? albumId;
   final String assetId;
   final String uri;
 
@@ -88,7 +88,7 @@ class ImageData {
 
   factory ImageData.fromJson(Map json) {
     return ImageData(
-      albumId: json['albumId'] as String,
+      albumId: json['albumId'] as String?,
       assetId: json['assetId'] as String,
       uri: json['uri'] as String,
     );

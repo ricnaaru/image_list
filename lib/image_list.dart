@@ -15,7 +15,7 @@ typedef void ImageTappedCallback(int count);
 
 class ImageList extends StatefulWidget {
   final String? albumId;
-  final int maxImages;
+  final int? maxImages;
   final int? maxSize;
   final String fileNamePrefix;
   final List<ImageData>? selections;
@@ -24,7 +24,7 @@ class ImageList extends StatefulWidget {
 
   ImageList({
     this.albumId,
-    this.maxImages = 1,
+    this.maxImages,
     this.maxSize,
     this.selections,
     required this.fileNamePrefix,
