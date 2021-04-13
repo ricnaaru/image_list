@@ -1,3 +1,7 @@
+## 2.0.0+1-nullsafety
+
+* Migrate to Null Safety
+
 ## 2.0.0-nullsafety
 
 * Migrate to Null Safety
