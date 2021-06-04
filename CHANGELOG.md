@@ -1,6 +1,11 @@
+## 2.0.1-nullsafety
+
+* Fix when picking up multiple images it will show duplicate images
+* Fix orientation of copied images
+
 ## 2.0.0+1-nullsafety
 
-* Migrate to Null Safety
+* Fix some nullable variables
 
 ## 2.0.0-nullsafety
 
