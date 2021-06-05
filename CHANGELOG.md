@@ -1,3 +1,7 @@
+## 2.0.1+1
+
+* Fix errors on ImageListAdapter.java
+
 ## 2.0.1-nullsafety
 
 * Fix when picking up multiple images it will show duplicate images
