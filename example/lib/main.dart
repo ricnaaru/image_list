@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
                             value: value,
                             child: Container(
                               width: MediaQuery.of(context).size.width - 100,
-                              child: Text(value.name, maxLines: 2),
+                              child: Text("${value.name} (${value.count})", maxLines: 2),
                             ),
                           );
                         }).toList(),

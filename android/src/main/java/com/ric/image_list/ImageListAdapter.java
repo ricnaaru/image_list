@@ -22,13 +22,13 @@ import io.flutter.plugin.common.MethodChannel;
 
 public class ImageListAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private ImageData[] pickerImages;
-    public ArrayList<ImageData> selectedImages;
+    private MediaData[] pickerImages;
+    public ArrayList<MediaData> selectedImages;
     private OnPhotoActionListener actionListener;
     private Integer maxSelected;
     private final MethodChannel methodChannel;
 
-    public ImageListAdapter(ImageData[] pickerImages, ArrayList<ImageData> selectedImages, Integer maxSelected, MethodChannel methodChannel) {
+    public ImageListAdapter(MediaData[] pickerImages, ArrayList<MediaData> selectedImages, Integer maxSelected, MethodChannel methodChannel) {
         this.methodChannel = methodChannel;
         this.pickerImages = pickerImages;
         this.selectedImages = selectedImages;
@@ -52,7 +52,7 @@ public class ImageListAdapter
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder holder, final int position) {
         final ViewHolderImage vh = (ViewHolderImage) holder;
-        final ImageData image = pickerImages[position];
+        final MediaData image = pickerImages[position];
         vh.item.setTag(image);
         vh.btnThumbCount.unselect();
         vh.btnThumbCount.setCircleColor(0xff006aff);
@@ -86,8 +86,8 @@ public class ImageListAdapter
         }
     }
 
-    private Boolean onCheckStateChange(View v, ImageData image) {
-        ArrayList<ImageData> pickedImages = selectedImages;
+    private Boolean onCheckStateChange(View v, MediaData image) {
+        ArrayList<MediaData> pickedImages = selectedImages;
         boolean isContained = pickedImages.contains(image);
         if (maxSelected != null && !maxSelected.equals(1) && maxSelected == pickedImages.size()
                 && !isContained) {

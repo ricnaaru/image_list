@@ -27,25 +27,28 @@ print("checkPermission");
 class Album {
   final String name;
   final String identifier;
+  final int count;
 
-  Album(this.name, this.identifier);
+  Album(this.name, this.identifier, this.count);
 
   factory Album.fromJson(Map<dynamic, dynamic> raw) {
-    return Album(raw["name"], raw["identifier"]);
+    return Album(raw["name"], raw["identifier"], raw["count"]);
   }
 
   Album copyWith({
     String? name,
     String? identifier,
+    int? count,
   }) {
     return Album(
       name ?? this.name,
       identifier ?? this.identifier,
+      count ?? this.count,
     );
   }
 
   @override
   String toString() {
-    return "Album(name: $name, identifier: $identifier)";
+    return "Album(name: $name, identifier: $identifier, count: $count)";
   }
 }

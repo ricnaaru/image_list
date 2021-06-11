@@ -1,6 +1,5 @@
 package com.ric.image_list;
 
-import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -28,7 +27,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -54,14 +52,13 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private final Context context;
     private RecyclerView recyclerView;
     private GridLayoutManager layoutManager;
-    private Long bucketId = 0L;
     private String albumId;
     private Integer maxImage;
     private Integer maxSize;
     private String fileNamePrefix;
     private boolean disposed = false;
     private View view;
-    private ArrayList<ImageData> selectedImages = new ArrayList<>();
+    private ArrayList<MediaData> selectedImages = new ArrayList<>();
 
     ImageList(
             int id,
@@ -99,11 +96,10 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                     selectedImages.add(new ImageData(Uri.parse(uri), albumId, assetId));
                 }
             }
-
-            getAlbums();
         }
 
         if (checkPermission()) {
+            long bucketId = Long.parseLong(albumId);
             new DisplayImage(context, this, bucketId, true).execute();
         }
     }
@@ -115,26 +111,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             return permissionCheck.CheckStoragePermission();
         } else {
             return true;
-        }
-    }
-
-    private void getAlbums() {
-        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-
-        String[] projection = {MediaStore.Images.Media.BUCKET_ID, MediaStore.Images.Media.BUCKET_DISPLAY_NAME};
-        String selection = MediaStore.Images.Media.BUCKET_ID + " = ?";
-        String[] selectionArgs = {albumId};
-        String sort = MediaStore.Images.Media.BUCKET_ID + " DESC";
-        Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sort);
-
-        if (cursor != null) {
-            int columnId = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID);
-
-            while (cursor.moveToNext()) {
-                bucketId = Long.valueOf(cursor.getString(columnId));
-            }
-
-            cursor.close();
         }
     }
 
@@ -158,10 +134,10 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 if (methodCall.arguments instanceof HashMap) {
                     Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
                     albumId = params.get("albumId").toString();
-                    getAlbums();
                 }
 
                 if (checkPermission()) {
+                    long bucketId = Long.parseLong(albumId);
                     new DisplayImage(context, this, bucketId, true).execute();
                 }
 
@@ -171,7 +147,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 List<Map<String, String>> imageIdList = new ArrayList<>();
 
                 for (int i = 0; i < adapter.selectedImages.size(); i++) {
-                    ImageData data = adapter.selectedImages.get(i);
+                    MediaData data = adapter.selectedImages.get(i);
 
                     Log.d("ricric", "albumId => " + data.getAlbumId() + ", assetId => " + data.getAssetId() + ", uri => " + data.getUri().toString());
 
@@ -223,7 +199,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         int counter = 0;
 
         while (destination.exists()) {
-            counter ++;
+            counter++;
             destination = new File(folder.getAbsolutePath(), baseName + "_" + counter + ".jpg");
         }
 
@@ -282,8 +258,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             Bitmap bmRotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
             bitmap.recycle();
             return bmRotated;
-        }
-        catch (OutOfMemoryError e) {
+        } catch (OutOfMemoryError e) {
             e.printStackTrace();
             return null;
         }
@@ -305,7 +280,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
     private ImageListAdapter adapter;
 
-    void setAdapter(ImageData[] result) {
+    void setAdapter(MediaData[] result) {
         adapter = new ImageListAdapter(result, selectedImages, maxImage, methodChannel);
         adapter.setActionListener(new ImageListAdapter.OnPhotoActionListener() {
             @Override
@@ -354,8 +329,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 if (requestCode == 28) {
                     if (grantResults.length > 0) {
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            // permission was granted, yay!
-                            getAlbums();
+                            long bucketId = Long.parseLong(albumId);
                             new DisplayImage(context, ImageList.this, bucketId, true).execute();
                         } else {
                             new PermissionCheck(context).showPermissionDialog();
@@ -380,8 +354,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 if (requestCode == 28) {
                     if (grantResults.length > 0) {
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            // permission was granted, yay!
-                            getAlbums();
+                            long bucketId = Long.parseLong(albumId);
                             new DisplayImage(context, ImageList.this, bucketId, true).execute();
                         } else {
                             new PermissionCheck(context).showPermissionDialog();
@@ -399,41 +372,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     }
 }
 
-class ImageData {
-    private Uri uri;
-    private String albumId;
-    private String assetId;
-
-    public ImageData(Uri uri, String albumId, String assetId) {
-        this.uri = uri;
-        this.albumId = albumId;
-        this.assetId = assetId;
-    }
-
-    public Uri getUri() {
-        return uri;
-    }
-
-    public String getAssetId() {
-        return assetId;
-    }
-
-    public String getAlbumId() {
-        return albumId;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object obj) {
-        if (!(obj instanceof ImageData)) return false;
-
-        ImageData other = (ImageData) obj;
-        return other.getAlbumId().equals(this.albumId) &&
-                other.getAssetId().equals(this.assetId) &&
-                other.getUri().equals(this.uri);
-    }
-}
-
-class DisplayImage extends AsyncTask<Void, Void, ImageData[]> {
+class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
     private ImageList imageList;
     private Long bucketId;
     private Boolean exceptGif;
@@ -448,35 +387,39 @@ class DisplayImage extends AsyncTask<Void, Void, ImageData[]> {
     }
 
     @Override
-    protected ImageData[] doInBackground(Void... params) {
+    protected MediaData[] doInBackground(Void... params) {
         return getAllMediaThumbnailsPath(bucketId, exceptGif);
     }
 
     @Override
-    protected void onPostExecute(ImageData[] result) {
+    protected void onPostExecute(MediaData[] result) {
         super.onPostExecute(result);
         imageList.setAdapter(result);
     }
 
 
     @NonNull
-    private ImageData[] getAllMediaThumbnailsPath(long id,
-                                                  Boolean exceptGif) {
-        String selection = MediaStore.Images.Media.BUCKET_ID + " = ?";
+    private MediaData[] getAllMediaThumbnailsPath(long id, Boolean exceptGif) {
+        String selection = "( " + MediaStore.Files.FileColumns.MEDIA_TYPE + "="
+                + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
+                + " OR "
+                + MediaStore.Files.FileColumns.MEDIA_TYPE + "="
+                + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO + " ) AND " +
+                MediaStore.Images.Media.BUCKET_ID + " = ?";
         String bucketId = String.valueOf(id);
-        String sort = MediaStore.Images.Media._ID + " DESC";
+        String sort = MediaStore.Files.FileColumns.DATE_ADDED + " DESC";
         String[] selectionArgs = {bucketId};
 
-        Uri images = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        Uri queryUri = MediaStore.Files.getContentUri("external");
         Cursor c;
 
         if (!bucketId.equals("0")) {
-            c = resolver.query(images, null, selection, selectionArgs, sort);
+            c = resolver.query(queryUri, null, selection, selectionArgs, sort);
         } else {
-            c = resolver.query(images, null, null, null, sort);
+            c = resolver.query(queryUri, null, null, null, sort);
         }
 
-        ImageData[] imageUris = new ImageData[c == null ? 0 : c.getCount()];
+        MediaData[] imageUris = new MediaData[c == null ? 0 : c.getCount()];
 
         if (c != null) {
             try {
@@ -488,9 +431,18 @@ class DisplayImage extends AsyncTask<Void, Void, ImageData[]> {
                                 regexUtil.checkGif(c.getString(c.getColumnIndex(MediaStore.Images.Media.DATA))))
                             continue;
                         int imgId = c.getInt(c.getColumnIndex(MediaStore.MediaColumns._ID));
-                        Uri path = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + imgId);
+                        Uri path = Uri.withAppendedPath(queryUri, "" + imgId);
+                        String mimeType = resolver.getType(path);
                         String assetId = c.getString(c.getColumnIndex(MediaStore.MediaColumns.DATA));
-                        imageUris[++position] = new ImageData(path, bucketId, assetId);
+                        if ( mimeType != null) {
+                            if (mimeType.startsWith("image")) {
+                                imageUris[++position] = new ImageData(path, bucketId, assetId);
+                            } else if (mimeType.startsWith("video")) {
+                                int duration = c.getInt(c.getColumnIndex(MediaStore.Video.VideoColumns.DURATION));
+                                Log.d("ricric", "c.getColumnIndex(MediaStore.Images.Media.DATA) => " + duration);
+                                imageUris[++position] = new VideoData(path, bucketId, assetId);
+                            }
+                        }
                     } while (c.moveToNext());
                 }
                 c.close();
