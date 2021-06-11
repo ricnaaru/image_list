@@ -69,7 +69,6 @@ public class ImageListAdapter
                     .loadImage(vh.imgThumbImage, image.getUri());
 
         if (image instanceof VideoData) {
-            Log.d("'ricric'", "lalala => " + String.valueOf(((VideoData)image).duration));
             vh.durationText.setVisibility(View.VISIBLE);
             vh.durationText.setText(millisecondsToHhMm(((VideoData)image).duration));
         }

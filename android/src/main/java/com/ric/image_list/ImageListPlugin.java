@@ -17,6 +17,7 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,24 +37,32 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
     @Override
     public void onMethodCall(MethodCall call, @NonNull final Result result) {
         if (call.method.equals("getAlbums")) {
-            Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-            HashMap<String, Pair<String, Integer>> albums = new HashMap<>();
-
-            getImageAlbumNames(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, albums);
-            getImageAlbumNames(MediaStore.Images.Media.INTERNAL_CONTENT_URI, albums);
-            getVideoAlbumNames(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, albums);
-            getVideoAlbumNames(MediaStore.Video.Media.INTERNAL_CONTENT_URI, albums);
-
             ArrayList<HashMap<String, Object>> finalResult = new ArrayList<>();
 
-            for (Map.Entry<String, Pair<String, Integer>> entry : albums.entrySet()) {
-                HashMap<String, Object> map = new HashMap<>();
+            if (call.arguments instanceof HashMap) {
+                Map<String, Object> params = (Map<String, Object>) call.arguments;
+                String typesRaw = params.get("types") == null ? "VIDEO-IMAGE" : params.get("types").toString();
+                List<String> types = Arrays.asList(typesRaw.split("-"));
+                HashMap<String, Pair<String, Integer>> albums = new HashMap<>();
 
-                map.put("name", entry.getKey());
-                map.put("identifier", entry.getValue().first);
-                map.put("count", entry.getValue().second);
+                if (types.contains("IMAGE")) {
+                    getImageAlbumNames(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, albums);
+                    getImageAlbumNames(MediaStore.Images.Media.INTERNAL_CONTENT_URI, albums);
+                }
+                if (types.contains("VIDEO")) {
+                    getVideoAlbumNames(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, albums);
+                    getVideoAlbumNames(MediaStore.Video.Media.INTERNAL_CONTENT_URI, albums);
+                }
 
-                finalResult.add(map);
+                for (Map.Entry<String, Pair<String, Integer>> entry : albums.entrySet()) {
+                    HashMap<String, Object> map = new HashMap<>();
+
+                    map.put("name", entry.getKey());
+                    map.put("identifier", entry.getValue().first);
+                    map.put("count", entry.getValue().second);
+
+                    finalResult.add(map);
+                }
             }
 
             result.success(finalResult);

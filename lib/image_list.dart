@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_list/plugin.dart';
+import 'data/media.dart';
 
 part 'controller.dart';
 
@@ -18,9 +19,10 @@ class ImageList extends StatefulWidget {
   final int? maxImages;
   final int? maxSize;
   final String fileNamePrefix;
-  final List<ImageData>? selections;
+  final List<MediaData>? selections;
   final ListCreatedCallback? onListCreated;
   final ImageTappedCallback? onImageTapped;
+  final List<MediaType> types;
 
   ImageList({
     this.albumId,
@@ -30,6 +32,7 @@ class ImageList extends StatefulWidget {
     required this.fileNamePrefix,
     this.onListCreated,
     this.onImageTapped,
+    required this.types,
   });
 
   @override
@@ -59,13 +62,16 @@ class _ImageListState extends State<ImageList> {
     }
 
     final Map<String, dynamic> creationParams = <String, dynamic>{
-      "albumId": widget.albumId ?? "",
+      "albumId": widget.albumId ?? "0",
       "maxImage": widget.maxImages,
       "maxSize": widget.maxSize,
       "fileNamePrefix": widget.fileNamePrefix,
       "selections": widget.selections == null
           ? null
           : widget.selections!.map((imageData) => imageData.toMap()).toList(),
+      'types': widget.types
+          .map((e) => e.toString().replaceAll("MediaType.", "").toUpperCase())
+          .join("-")
     };
 
     if (defaultTargetPlatform == TargetPlatform.android) {

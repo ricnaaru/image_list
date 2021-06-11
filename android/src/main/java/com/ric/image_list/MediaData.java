@@ -40,9 +40,9 @@ class MediaData {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if (!(obj instanceof ImageData)) return false;
+        if (!(obj instanceof MediaData)) return false;
 
-        ImageData other = (ImageData) obj;
+        MediaData other = (MediaData) obj;
         return other.getAlbumId().equals(this.albumId) &&
                 other.getAssetId().equals(this.assetId) &&
                 other.getUri().equals(this.uri);

@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_list/data/media.dart';
 import 'package:image_list/image_list.dart';
 import 'package:image_list/plugin.dart';
+import 'package:image_list_example/image_preview.dart';
+import 'package:image_list_example/video_preview.dart';
 
 void main() => runApp(MyApp());
 
@@ -15,25 +18,16 @@ class _MyAppState extends State<MyApp> {
   List<Album>? albums;
   ImageListController? controller;
   Album? currentAlbum;
-  List<ImageData>? _selections;
+  List<MediaData>? _selections;
   bool multipleMode = false;
-  bool initialized = false;
+  bool loading = true;
+  List<MediaType> types = <MediaType>[MediaType.image, MediaType.video];
 
   @override
   void initState() {
     super.initState();
-    print("ImageListPlugin.getAlbums()");
 
-    ImageListPlugin.getAlbums().then((albums) {
-      print("albums => $albums");
-      if (this.mounted)
-        setState(() {
-          this.initialized = true;
-          this.albums = albums;
-          if (this.albums != null && this.albums!.isNotEmpty)
-            this.currentAlbum = albums.first;
-        });
-    });
+    getAlbums();
   }
 
   @override
@@ -44,101 +38,161 @@ class _MyAppState extends State<MyApp> {
           appBar: AppBar(
             title: const Text('Image List Example'),
           ),
-          body: !initialized
+          body: loading
               ? Center(child: CircularProgressIndicator())
               : albums == null
-              ? Center(child: Text('Could not load images'))
-              : Column(
-                  children: [
-                    if (currentAlbum != null)
-                      DropdownButton<Album>(
-                        value: currentAlbum,
-                        onChanged: (Album? newAlbum) {
-                          this.currentAlbum = newAlbum;
-                          setState(() {
-                            if (controller != null && currentAlbum != null)
-                              this
-                                  .controller!
-                                  .reloadAlbum(currentAlbum!.identifier);
-                          });
-                        },
-                        items:
-                            albums!.map<DropdownMenuItem<Album>>((Album value) {
-                          return DropdownMenuItem<Album>(
-                            value: value,
-                            child: Container(
-                              width: MediaQuery.of(context).size.width - 100,
-                              child: Text("${value.name} (${value.count})", maxLines: 2),
+                  ? Center(child: Text('Could not load images'))
+                  : Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CheckboxListTile(
+                                title: Text("Get Images"),
+                                value: types.contains(MediaType.image),
+                                onChanged: (newValue) {
+                                  setState(() {
+                                    loading = true;
+                                    if (types.contains(MediaType.image))
+                                      types.remove(MediaType.image);
+                                    else
+                                      types.add(MediaType.image);
+
+                                    getAlbums();
+                                  });
+                                },
+                                controlAffinity: ListTileControlAffinity
+                                    .leading, //  <-- leading Checkbox
+                              ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-                    TextButton(
-                      child: Text(multipleMode ? "Set Single" : "Set Multiple"),
-                      onPressed: () {
-                        setState(() {
-                          multipleMode = !multipleMode;
-                          if (this.controller != null)
-                            this
-                                .controller!
-                                .setMaxImage(multipleMode ? null : 1);
-                        });
-                      },
-                    ),
-                    Expanded(
-                      child: ImageList(
-                        maxImages: 1,
-                        albumId: currentAlbum?.identifier ?? "",
-                        onImageTapped: (count) {
-                          print("onImageTapped => $count");
-                        },
-                        onListCreated: (controller) {
-                          this.controller = controller;
-                        },
-                        selections: _selections,
-                        fileNamePrefix: "AdvImageExample",
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: TextButton(
-                        child: Text("Submit"),
-                        onPressed: () {
-                          if (this.controller != null)
-                            this.controller!.getSelectedImage().then((res) {
-                              if (res == null) return;
+                            Expanded(
+                              child: CheckboxListTile(
+                                title: Text("Get Videos"),
+                                value: types.contains(MediaType.video),
+                                onChanged: (newValue) {
+                                  setState(() {
+                                    loading = true;
+                                    if (types.contains(MediaType.video))
+                                      types.remove(MediaType.video);
+                                    else
+                                      types.add(MediaType.video);
 
-                              File f = File(res.first.assetId!);
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (BuildContext context) {
-                                    return ResultPreviewPage(file: f);
-                                  },
+                                    getAlbums();
+                                  });
+                                },
+                                controlAffinity: ListTileControlAffinity
+                                    .leading, //  <-- leading Checkbox
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (currentAlbum != null)
+                          DropdownButton<Album>(
+                            value: currentAlbum,
+                            onChanged: (Album? newAlbum) {
+                              this.currentAlbum = newAlbum;
+                              setState(() {
+                                if (controller != null && currentAlbum != null)
+                                  this
+                                      .controller!
+                                      .reloadAlbum(currentAlbum!.identifier);
+                              });
+                            },
+                            items: albums!
+                                .map<DropdownMenuItem<Album>>((Album value) {
+                              return DropdownMenuItem<Album>(
+                                value: value,
+                                child: Container(
+                                  width:
+                                      MediaQuery.of(context).size.width - 100,
+                                  child: Text("${value.name} (${value.count})",
+                                      maxLines: 2),
                                 ),
                               );
+                            }).toList(),
+                          ),
+                        TextButton(
+                          child: Text(
+                              multipleMode ? "Set Single" : "Set Multiple"),
+                          onPressed: () {
+                            setState(() {
+                              multipleMode = !multipleMode;
+                              if (this.controller != null)
+                                this
+                                    .controller!
+                                    .setMaxImage(multipleMode ? null : 1);
                             });
-                        },
-                      ),
-                    )
-                  ],
-                ),
+                          },
+                        ),
+                        Expanded(
+                          child: ImageList(
+                            types: types,
+                            maxImages: 1,
+                            albumId: currentAlbum?.identifier ?? "",
+                            onImageTapped: (count) {
+                              if (!multipleMode) {
+                                submit(context);
+                              }
+                            },
+                            onListCreated: (controller) {
+                              this.controller = controller;
+                            },
+                            selections: _selections,
+                            fileNamePrefix: "AdvImageExample",
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: TextButton(
+                            child: Text("Submit"),
+                            onPressed: () => submit(context),
+                          ),
+                        )
+                      ],
+                    ),
         );
       },
     ));
   }
-}
 
-class ResultPreviewPage extends StatelessWidget {
-  final File file;
+  void submit(BuildContext context) {
+    if (this.controller != null)
+      this.controller!.getSelectedMedia().then((res) {
+        if (res == null) return;
 
-  const ResultPreviewPage({Key? key, required this.file}) : super(key: key);
+        File f = File(res.first.assetId);
+        late Widget preview;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(title: Text("Result")),
-        body: Center(child: Image.file(file)));
+        if (res.first.type == MediaType.video) {
+          preview = VideoPreview(videoFile: f);
+        } else {
+          preview = ImagePreview(file: f);
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (BuildContext context) {
+              return preview;
+            },
+          ),
+        );
+      });
+  }
+
+  void getAlbums() {
+    ImageListPlugin.getAlbums(types: types).then((albums) {
+      if (this.mounted)
+        setState(() {
+          this.loading = false;
+          this.albums = albums;
+          if (this.albums != null && this.albums!.isNotEmpty)
+            this.currentAlbum = albums.first;
+          if (controller != null && currentAlbum != null)
+            this
+                .controller!
+                .reloadAlbum(currentAlbum!.identifier);
+        });
+    });
   }
 }

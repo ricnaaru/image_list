@@ -17,7 +17,8 @@ class ImageListController {
     int id,
     _ImageListState imageListState,
   ) async {
-    final MethodChannel channel = MethodChannel('plugins.flutter.io/image_list/$id');
+    final MethodChannel channel =
+        MethodChannel('plugins.flutter.io/image_list/$id');
 
     await channel.invokeMethod('waitForList');
     return ImageListController._(
@@ -58,39 +59,15 @@ class ImageListController {
     });
   }
 
-  Future<List<ImageData>?> getSelectedImage() async {
-    List<ImageData>? result;
-    List<dynamic>? raw = await channel.invokeMethod('getSelectedImages', null);
+  Future<List<MediaData>?> getSelectedMedia() async {
+    List<MediaData>? result;
+    List<dynamic>? raw = await channel.invokeMethod('getSelectedMedia', null);
 
     if (raw != null) {
       result = raw.map((map) {
-        return ImageData.fromJson(map);
+        return MediaData.fromJson(map);
       }).toList();
     }
     return result;
-  }
-}
-
-class ImageData {
-  final String? albumId;
-  final String assetId;
-  final String uri;
-
-  ImageData({required this.albumId, required this.assetId, required this.uri});
-
-  Map toMap() {
-    return {
-      "albumId": albumId,
-      "assetId": assetId,
-      "uri": uri,
-    };
-  }
-
-  factory ImageData.fromJson(Map json) {
-    return ImageData(
-      albumId: json['albumId'] as String?,
-      assetId: json['assetId'] as String,
-      uri: json['uri'] as String,
-    );
   }
 }

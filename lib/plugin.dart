@@ -1,15 +1,23 @@
 import 'package:flutter/services.dart';
+import 'package:image_list/data/media.dart';
 
 class ImageListPlugin {
   static const MethodChannel _channel = const MethodChannel('image_list');
 
-  static Future<dynamic> getAlbums() async {
-    print("getAlbums");
+  static Future<dynamic> getAlbums({
+    List<MediaType> types = const <MediaType>[MediaType.image, MediaType.video],
+  }) async {
     bool hasPermission = await checkPermission();
-print("checkPermission");
     if (!hasPermission) return null;
 
-    final List<dynamic> images = await _channel.invokeMethod('getAlbums');
+    final List<dynamic> images = await _channel.invokeMethod(
+      'getAlbums',
+      {
+        'types': types
+            .map((e) => e.toString().replaceAll("MediaType.", "").toUpperCase())
+            .join("-")
+      },
+    );
     List<Album> albums = <Album>[];
     for (var element in images) {
       albums.add(Album.fromJson(element));

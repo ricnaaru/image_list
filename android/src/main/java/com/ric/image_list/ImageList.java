@@ -13,10 +13,10 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private Integer maxSize;
     private String fileNamePrefix;
     private boolean disposed = false;
+    private List<String> types = new ArrayList<>();
     private View view;
     private ArrayList<MediaData> selectedImages = new ArrayList<>();
 
@@ -78,6 +80,8 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
         if (args instanceof HashMap) {
             Map<String, Object> params = (Map<String, Object>) args;
+            String typesRaw = params.get("types") == null ? "VIDEO-IMAGE" : params.get("types").toString();
+            types = Arrays.asList(typesRaw.split("-"));
             albumId = params.get("albumId").toString();
             maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
             maxSize = params.get("maxSize") == null ? null : Integer.valueOf(params.get("maxSize").toString());
@@ -91,15 +95,28 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                     String albumId = selection.get("albumId") == null ? "" : selection.get("albumId").toString();
                     String assetId = selection.get("assetId") == null ? "" : selection.get("assetId").toString();
                     String uri = selection.get("uri") == null ? "" : selection.get("uri").toString();
+                    String type = selection.get("type") == null ? "" : selection.get("type").toString();
+                    long duration = selection.get("duration") == null ? 0 : Long.valueOf(selection.get("duration").toString());
+                    MediaData mediaData;
 
-                    selectedImages.add(new ImageData(Uri.parse(uri), albumId, assetId));
+                    if (type.equals("IMAGE")) {
+                        mediaData = new ImageData(Uri.parse(uri), albumId, assetId);
+                    } else {
+                        mediaData = new VideoData(Uri.parse(uri), albumId, assetId, duration);
+                    }
+
+                    selectedImages.add(mediaData);
                 }
             }
         }
 
-        if (checkPermission()) {
-            long bucketId = Long.parseLong(albumId);
-            new DisplayImage(context, this, bucketId, true).execute();
+        if (albumId.isEmpty()) {
+            view = LayoutInflater.from(context).inflate(R.layout.no_album_view, null);
+        } else {
+            if (checkPermission()) {
+                long bucketId = Long.parseLong(albumId);
+                new DisplayImage(context, this, bucketId, true, types).execute();
+            }
         }
     }
 
@@ -133,28 +150,40 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 if (methodCall.arguments instanceof HashMap) {
                     Map<String, Object> params = (Map<String, Object>) methodCall.arguments;
                     albumId = params.get("albumId").toString();
+
+                    if (params.get("types") != null) {
+                        String typesRaw = params.get("types").toString();
+                        types = Arrays.asList(typesRaw.split("-"));
+                    }
                 }
 
                 if (checkPermission()) {
                     long bucketId = Long.parseLong(albumId);
-                    new DisplayImage(context, this, bucketId, true).execute();
+                    new DisplayImage(context, this, bucketId, true, types).execute();
                 }
 
                 result.success(true);
                 break;
-            case "getSelectedImages":
+            case "getSelectedMedia":
                 List<Map<String, String>> imageIdList = new ArrayList<>();
 
                 for (int i = 0; i < adapter.selectedImages.size(); i++) {
                     MediaData data = adapter.selectedImages.get(i);
 
-                    String newPath = copyAndResizeFile(data.getAssetId());
+                    //this will be implemented later
+//                    String newPath = copyAndResizeFile(data.getAssetId());
 
                     Map<String, String> map = new HashMap<>();
                     map.put("type", data.getType().toString());
                     map.put("albumId", data.getAlbumId());
-                    map.put("assetId", newPath);
+                    map.put("assetId", data.getAssetId());
                     map.put("uri", data.getUri().toString());
+
+                    if (data instanceof VideoData) {
+                        map.put("duration", String.valueOf(((VideoData) data).duration));
+                    }
+
+
                     imageIdList.add(map);
                 }
 
@@ -328,7 +357,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                     if (grantResults.length > 0) {
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                             long bucketId = Long.parseLong(albumId);
-                            new DisplayImage(context, ImageList.this, bucketId, true).execute();
+                            new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
                         } else {
                             new PermissionCheck(context).showPermissionDialog();
                         }
@@ -353,7 +382,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                     if (grantResults.length > 0) {
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                             long bucketId = Long.parseLong(albumId);
-                            new DisplayImage(context, ImageList.this, bucketId, true).execute();
+                            new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
                         } else {
                             new PermissionCheck(context).showPermissionDialog();
                         }
@@ -375,13 +404,15 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
     private Long bucketId;
     private Boolean exceptGif;
     private ContentResolver resolver;
+    private List<String> types;
 
     DisplayImage(Context context, ImageList imageList, Long bucketId,
-                 Boolean exceptGif) {
+                 Boolean exceptGif, List<String> types) {
         this.imageList = imageList;
         this.bucketId = bucketId;
         this.exceptGif = exceptGif;
         this.resolver = context.getContentResolver();
+        this.types = types;
     }
 
     @Override
@@ -398,11 +429,12 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
 
     @NonNull
     private MediaData[] getAllMediaThumbnailsPath(long id, Boolean exceptGif) {
-        String selection = "( " + MediaStore.Files.FileColumns.MEDIA_TYPE + "="
-                + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
+        String selection = "( "
+                + " ( " + MediaStore.Files.FileColumns.MEDIA_TYPE + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
+                + " AND 1 = " + (types.contains("IMAGE") ? "1" : "0") + " ) "
                 + " OR "
-                + MediaStore.Files.FileColumns.MEDIA_TYPE + "="
-                + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO + " ) AND " +
+                + " ( " + MediaStore.Files.FileColumns.MEDIA_TYPE + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
+                + " AND 1 = " + (types.contains("VIDEO") ? "1" : "0") + " ) ) AND " +
                 MediaStore.Images.Media.BUCKET_ID + " = ?";
         String bucketId = String.valueOf(id);
         String sort = MediaStore.Files.FileColumns.DATE_ADDED + " DESC";
