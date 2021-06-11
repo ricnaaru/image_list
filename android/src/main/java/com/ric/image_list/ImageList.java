@@ -19,7 +19,6 @@ import android.view.View;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -149,12 +148,11 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 for (int i = 0; i < adapter.selectedImages.size(); i++) {
                     MediaData data = adapter.selectedImages.get(i);
 
-                    Log.d("ricric", "albumId => " + data.getAlbumId() + ", assetId => " + data.getAssetId() + ", uri => " + data.getUri().toString());
-
                     String newPath = copyAndResizeFile(data.getAssetId());
 
                     Map<String, String> map = new HashMap<>();
-                    map.put("albumId", null);
+                    map.put("type", data.getType().toString());
+                    map.put("albumId", data.getAlbumId());
                     map.put("assetId", newPath);
                     map.put("uri", data.getUri().toString());
                     imageIdList.add(map);
@@ -302,7 +300,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 RadioWithTextButton btnThumbCount = view.findViewById(R.id.btn_thumb_count);
                 ImageView imgThumbImage = view.findViewById(R.id.img_thumb_image);
                 View overlay = view.findViewById(R.id.overlay);
-                ImageData image = (ImageData) view.getTag();
+                MediaData image = (MediaData) view.getTag();
                 if (image != null) {
                     int index = adapter.selectedImages.indexOf(image);
                     if (index != -1) {
@@ -434,13 +432,12 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
                         Uri path = Uri.withAppendedPath(queryUri, "" + imgId);
                         String mimeType = resolver.getType(path);
                         String assetId = c.getString(c.getColumnIndex(MediaStore.MediaColumns.DATA));
-                        if ( mimeType != null) {
+                        if (mimeType != null) {
                             if (mimeType.startsWith("image")) {
                                 imageUris[++position] = new ImageData(path, bucketId, assetId);
                             } else if (mimeType.startsWith("video")) {
-                                int duration = c.getInt(c.getColumnIndex(MediaStore.Video.VideoColumns.DURATION));
-                                Log.d("ricric", "c.getColumnIndex(MediaStore.Images.Media.DATA) => " + duration);
-                                imageUris[++position] = new VideoData(path, bucketId, assetId);
+                                long duration = c.getLong(c.getColumnIndex(MediaStore.Video.VideoColumns.DURATION));
+                                imageUris[++position] = new VideoData(path, bucketId, assetId, duration);
                             }
                         }
                     } while (c.moveToNext());

@@ -9,13 +9,14 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <ImageView
             android:id="@+id/img_thumb_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipChildren="false"
             android:clipToPadding="false"
-            android:cropToPadding="false"/>
+            android:cropToPadding="false" />
 
         <com.ric.image_list.RadioWithTextButton
             android:id="@+id/btn_thumb_count"
@@ -28,6 +29,21 @@
             android:id="@+id/overlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#aaaaaa"/>
+            android:background="#aaaaaa" />
+
+        <TextView
+            android:id="@+id/duration_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/rounded_rect"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="2dp"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </RelativeLayout>
 </com.ric.image_list.SquareFrameLayout>

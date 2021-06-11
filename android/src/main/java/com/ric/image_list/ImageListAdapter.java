@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
@@ -15,7 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.flutter.plugin.common.MethodChannel;
 
@@ -64,6 +67,13 @@ public class ImageListAdapter
                 && vh.imgThumbImage != null)
             new GlideAdapter()
                     .loadImage(vh.imgThumbImage, image.getUri());
+
+        if (image instanceof VideoData) {
+            Log.d("'ricric'", "lalala => " + String.valueOf(((VideoData)image).duration));
+            vh.durationText.setVisibility(View.VISIBLE);
+            vh.durationText.setText(millisecondsToHhMm(((VideoData)image).duration));
+        }
+
         vh.imgThumbImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -74,7 +84,29 @@ public class ImageListAdapter
                     methodChannel.invokeMethod("onImageTapped", params);
                 }
             }
-        });
+        } );
+    }
+
+    private String millisecondsToHhMm(long milliseconds) {
+        if (TimeUnit.MILLISECONDS.toHours(milliseconds) > 0) {
+            return String.format(Locale.ENGLISH, "%02d:%02d:%02d",
+                    TimeUnit.MILLISECONDS.toHours(milliseconds),
+                    TimeUnit.MILLISECONDS.toMinutes(milliseconds) -
+                            TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(milliseconds)), // The change is in this line
+                    TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
+        } else if (TimeUnit.MILLISECONDS.toMinutes(milliseconds) > 0) {
+            return String.format(Locale.ENGLISH, "%02d:%02d",
+                    TimeUnit.MILLISECONDS.toMinutes(milliseconds) -
+                            TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(milliseconds)), // The change is in this line
+                    TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
+        } else {
+            return String.format(Locale.ENGLISH, "0:%02d", // The change is in this line
+                    TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
+        }
+
     }
 
     private void initState(int selectedIndex, ViewHolderImage vh) {
@@ -192,6 +224,7 @@ public class ImageListAdapter
         ImageView imgThumbImage;
         RadioWithTextButton btnThumbCount;
         View overlay;
+        TextView durationText;
 
         public ViewHolderImage(View view) {
             super(view);
@@ -199,6 +232,7 @@ public class ImageListAdapter
             imgThumbImage = view.findViewById(R.id.img_thumb_image);
             btnThumbCount = view.findViewById(R.id.btn_thumb_count);
             overlay = view.findViewById(R.id.overlay);
+            durationText = view.findViewById(R.id.duration_text);
         }
     }
 }
