@@ -4,7 +4,7 @@ class ImageData extends MediaData {
   ImageData({
     required String? albumId,
     required String assetId,
-    required String uri,
+    required String? uri,
   }) : super(
             albumId: albumId,
             assetId: assetId,
@@ -15,7 +15,7 @@ class ImageData extends MediaData {
     return ImageData(
       albumId: json['albumId'] as String?,
       assetId: json['assetId'] as String,
-      uri: json['uri'] as String,
+      uri: json['uri'] as String?,
     );
   }
 }

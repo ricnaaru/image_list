@@ -39,8 +39,12 @@ class Album {
 
   Album(this.name, this.identifier, this.count);
 
-  factory Album.fromJson(Map<dynamic, dynamic> raw) {
-    return Album(raw["name"], raw["identifier"], raw["count"]);
+  factory Album.fromJson(Map<dynamic, dynamic>? raw) {
+    if (raw == null) {
+      return Album("", "", 0);
+    }
+
+    return Album(raw["name"] ?? "", raw["identifier"] ?? "", raw["count"] ?? 0);
   }
 
   Album copyWith({

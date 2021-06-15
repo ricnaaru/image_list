@@ -6,7 +6,7 @@ class VideoData extends MediaData {
   VideoData({
     required String? albumId,
     required String assetId,
-    required String uri,
+    required String? uri,
     required this.durationMs,
   }) : super(
       albumId: albumId,
@@ -18,7 +18,7 @@ class VideoData extends MediaData {
     return VideoData(
       albumId: json['albumId'] as String?,
       assetId: json['assetId'] as String,
-      uri: json['uri'] as String,
+      uri: json['uri'] as String?,
       durationMs: int.tryParse(json['duration'] as String) ?? 0,
     );
   }
