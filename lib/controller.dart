@@ -52,18 +52,13 @@ class ImageListController {
     List<MediaType>? types
   }) async {
     types ??= _imageListState.types;
-    print("reloadAlbum => ${types
-        .map((e) => e.toString().replaceAll("MediaType.", "").toUpperCase())
-        .join("-")}");
+
     await channel.invokeMethod('reloadAlbum', <String, dynamic>{
       'albumId': albumId,
       'types': types
           .map((e) => e.toString().replaceAll("MediaType.", "").toUpperCase())
           .join("-")
     });
-    print("done reloadAlbum => ${types
-        .map((e) => e.toString().replaceAll("MediaType.", "").toUpperCase())
-        .join("-")}");
   }
 
   Future<void> setMaxImage(int? maxImage) async {

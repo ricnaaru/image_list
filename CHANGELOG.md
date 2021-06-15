@@ -1,3 +1,7 @@
+## 2.0.2
+
+* Add Video features for both IOS and Android
+
 ## 2.0.1+1
 
 * Fix errors on ImageListAdapter.java

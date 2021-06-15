@@ -505,8 +505,6 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
             }
         }
 
-        Log.d("ricric", "here => " + imageUris.length);
-
         return imageUris;
     }
 }
