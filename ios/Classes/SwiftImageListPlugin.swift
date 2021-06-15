@@ -41,7 +41,19 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
             videoPredicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
         }
         
-        let finalPredicate = imagePredicate != nil && videoPredicate != nil ? NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!]) : imagePredicate != nil ? imagePredicate! :  videoPredicate != nil ? videoPredicate! : nil
+        var finalPredicate: NSPredicate?
+            
+        if (imagePredicate != nil && videoPredicate != nil) {
+            finalPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!])
+        } else {
+            if imagePredicate != nil {
+                finalPredicate = imagePredicate!
+            } else if videoPredicate != nil {
+                finalPredicate = videoPredicate!
+            } else {
+                finalPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.and, subpredicates: [NSPredicate(format: "mediaType != %d", PHAssetMediaType.video.rawValue), NSPredicate(format: "mediaType != %d", PHAssetMediaType.image.rawValue)])
+            }
+        }
         
         let fetchOptions = PHFetchOptions()
         
@@ -63,7 +75,7 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
                 }
                 
                 let fetchOptions = PHFetchOptions()
-                fetchOptions.predicate = finalPredicate
+                fetchOptions.predicate = finalPredicate!
                 let assetCount = PHAsset.fetchAssets(in: asset, options: fetchOptions).count
                 
                 if assetCount > 0 {

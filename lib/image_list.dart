@@ -49,7 +49,6 @@ class _ImageListState extends State<ImageList> {
     super.initState();
 
     types = widget.types;
-    print("init type => ${types.map((e) => e.toString()).join("-")}");
 
     ImageListPlugin.checkPermission().then((value) {
       if (this.mounted)
@@ -62,10 +61,6 @@ class _ImageListState extends State<ImageList> {
   @override
   void didUpdateWidget(covariant ImageList oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    print("didUpdateWidget type 1=> ${types.map((e) => e.toString()).join("-")}");;
-
-    print("didUpdateWidget type 2=> ${widget.types.map((e) => e.toString()).join("-")}");
 
     types = widget.types;
   }

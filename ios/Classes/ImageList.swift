@@ -88,7 +88,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
                     self.types = (dict["types"] as? String)!
                 } else {
                     self.albumId = ""
-                    self.types = "VIDEO-IMAGE"
+                    self.types = ""
                 }
 
                 self.loadImage()
@@ -245,11 +245,23 @@ public class ImageListView : NSObject, FlutterPlatformView {
             videoPredicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
         }
         
-        let finalPredicate = imagePredicate != nil && videoPredicate != nil ? NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!]) : imagePredicate != nil ? imagePredicate! : videoPredicate!
+        var finalPredicate: NSPredicate?
+            
+        if (imagePredicate != nil && videoPredicate != nil) {
+            finalPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!])
+        } else {
+            if imagePredicate != nil {
+                finalPredicate = imagePredicate!
+            } else if videoPredicate != nil {
+                finalPredicate = videoPredicate!
+            } else {
+                finalPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.and, subpredicates: [NSPredicate(format: "mediaType != %d", PHAssetMediaType.video.rawValue), NSPredicate(format: "mediaType != %d", PHAssetMediaType.image.rawValue)])
+            }
+        }
         
         let fetchOptionsAssets = PHFetchOptions()
         
-        fetchOptionsAssets.predicate = finalPredicate
+        fetchOptionsAssets.predicate = finalPredicate!
 
         if let album = allAlbums.first?.firstObject {
             self.fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
@@ -300,6 +312,7 @@ extension ImageListView: UICollectionViewDataSource {
         cell.asset = asset
         
         if asset.mediaType == .video {
+            cell.textView.isHidden = false
             let (h,m,s) = secondsToHoursMinutesSeconds(seconds: Int(asset.duration))
             
             var durationText: String = ""
@@ -329,6 +342,9 @@ extension ImageListView: UICollectionViewDataSource {
                 cell.textView.widthAnchor.constraint(equalToConstant: max(newSize.width, fixedWidth))
                 ])
             }
+        } else {
+            cell.textView.text = ""
+            cell.textView.isHidden = true
         }
 
         if let collectionViewFlowLayout = self.uiCollectionView.collectionViewLayout as? GridCollectionViewLayout {
