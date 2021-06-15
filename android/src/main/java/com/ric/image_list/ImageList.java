@@ -13,6 +13,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -110,13 +111,16 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             }
         }
 
-        if (albumId.isEmpty()) {
-            view = LayoutInflater.from(context).inflate(R.layout.no_album_view, null);
-        } else {
-            if (checkPermission()) {
-                long bucketId = Long.parseLong(albumId);
-                new DisplayImage(context, this, bucketId, true, types).execute();
+        if (checkPermission()) {
+            long bucketId = 0;
+
+            try {
+                bucketId = Long.parseLong(albumId);
+            } catch (Exception ignored) {
+
             }
+
+            new DisplayImage(context, this, bucketId, true, types).execute();
         }
     }
 
@@ -158,7 +162,14 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 }
 
                 if (checkPermission()) {
-                    long bucketId = Long.parseLong(albumId);
+                    long bucketId = 0;
+
+                    try {
+                        bucketId = Long.parseLong(albumId);
+                    } catch (Exception ignored) {
+
+                    }
+
                     new DisplayImage(context, this, bucketId, true, types).execute();
                 }
 
@@ -356,7 +367,14 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 if (requestCode == 28) {
                     if (grantResults.length > 0) {
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            long bucketId = Long.parseLong(albumId);
+                            long bucketId = 0;
+
+                            try {
+                                bucketId = Long.parseLong(albumId);
+                            } catch (Exception ignored) {
+
+                            }
+
                             new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
                         } else {
                             new PermissionCheck(context).showPermissionDialog();
@@ -381,7 +399,14 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 if (requestCode == 28) {
                     if (grantResults.length > 0) {
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            long bucketId = Long.parseLong(albumId);
+                            long bucketId = 0;
+
+                            try {
+                                bucketId = Long.parseLong(albumId);
+                            } catch (Exception ignored) {
+
+                            }
+
                             new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
                         } else {
                             new PermissionCheck(context).showPermissionDialog();
@@ -446,7 +471,7 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
         if (!bucketId.equals("0")) {
             c = resolver.query(queryUri, null, selection, selectionArgs, sort);
         } else {
-            c = resolver.query(queryUri, null, null, null, sort);
+            return new MediaData[0];
         }
 
         MediaData[] imageUris = new MediaData[c == null ? 0 : c.getCount()];
@@ -479,6 +504,8 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
                 if (!c.isClosed()) c.close();
             }
         }
+
+        Log.d("ricric", "here => " + imageUris.length);
 
         return imageUris;
     }
