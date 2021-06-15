@@ -31,6 +31,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
     var maxSize: Int?
     var maxImage: Int?
     var fileNamePrefix: String = ""
+    var types: String = ""
 
     init(_ frame: CGRect, viewId: Int64, args: Any?, with registrar: FlutterPluginRegistrar) {
         self.frame = frame
@@ -45,7 +46,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
             self.maxImage = dict["maxImage"] as? Int
             self.maxSize = dict["maxSize"] as? Int
             self.fileNamePrefix = (dict["fileNamePrefix"] as? String)!
-
+            self.types = (dict["types"] as? String)!
         }
 
         assetStore = AssetStore(assets: [Asset?](repeating: nil, count: selections.count))
@@ -84,73 +85,74 @@ public class ImageListView : NSObject, FlutterPlatformView {
             } else if call.method == "reloadAlbum" {
                 if let dict = call.arguments as? [String: Any] {
                     self.albumId = (dict["albumId"] as? String)!
+                    self.types = (dict["types"] as? String)!
                 } else {
                     self.albumId = ""
+                    self.types = "VIDEO-IMAGE"
                 }
 
                 self.loadImage()
 
                 result(nil)
-            } else if call.method == "getSelectedImages" {
+            } else if call.method == "getSelectedMedia" {
                 self.getSelectedImages(result)
             }
         }
     }
 
-    private func secureCopyItem(at srcURL: URL) -> String? {
-
-        let pathWithoutExtension = srcURL.deletingPathExtension().path
-        let fileExtension = srcURL.path.replacingOccurrences(of: pathWithoutExtension, with: "")
-
-        guard let directory = try? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false) as NSURL else {
-            return nil
-        }
-
-        let timestamp = NSDate().timeIntervalSince1970
-        let myTimeInterval = TimeInterval(timestamp)
-        let time = NSDate(timeIntervalSince1970: TimeInterval(myTimeInterval))
-        let dateFormatterGet = DateFormatter()
-        dateFormatterGet.dateFormat = "yyyyMMdd_HHmmss"
-
-        let fileURL = directory.appendingPathComponent("\(self.fileNamePrefix)_\(dateFormatterGet.string(from: time as Date))\(fileExtension)")
-
-        if let fileURL = fileURL {
-            do {
-                print("valid fileURL")
-                if FileManager.default.fileExists(atPath: fileURL.path) {
-                    try FileManager.default.removeItem(at: fileURL)
-                }
-
-                let image = UIImage(contentsOfFile: srcURL.path)
-
-                if let image = image {
-                    let resizedImage = resizeImage(image: image)!
-
-                    if fileExtension.lowercased() == ".png" {
-                        if let data = resizedImage.pngData() {
-                            try? data.write(to: fileURL)
-                        }
-                    } else if fileExtension.lowercased() == ".jpg" || fileExtension.lowercased() == ".jpeg" {
-                        if let data = resizedImage.jpegData(compressionQuality: 1) {
-                            try? data.write(to: fileURL)
-                        }
-                    } else {
-                        return nil
-                    }
-
-                    return fileURL.path
-                } else {
-                    return nil
-                }
-            } catch (let error) {
-                print("Cannot copy item at \(srcURL) to \(fileURL): \(error)")
-                return nil
-            }
-        } else {
-            print("Failed to initialize destination file name")
-            return nil
-        }
-    }
+//    private func secureCopyItem(at srcURL: URL) -> String? {
+//
+//        let pathWithoutExtension = srcURL.deletingPathExtension().path
+//        let fileExtension = srcURL.path.replacingOccurrences(of: pathWithoutExtension, with: "")
+//
+//        guard let directory = try? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false) as NSURL else {
+//            return nil
+//        }
+//
+//        let timestamp = NSDate().timeIntervalSince1970
+//        let myTimeInterval = TimeInterval(timestamp)
+//        let time = NSDate(timeIntervalSince1970: TimeInterval(myTimeInterval))
+//        let dateFormatterGet = DateFormatter()
+//        dateFormatterGet.dateFormat = "yyyyMMdd_HHmmss"
+//
+//        let fileURL = directory.appendingPathComponent("\(self.fileNamePrefix)_\(dateFormatterGet.string(from: time as Date))\(fileExtension)")
+//
+//        if let fileURL = fileURL {
+//            do {
+//                if FileManager.default.fileExists(atPath: fileURL.path) {
+//                    try FileManager.default.removeItem(at: fileURL)
+//                }
+//
+//                let image = UIImage(contentsOfFile: srcURL.path)
+//
+//                if let image = image {
+//                    let resizedImage = resizeImage(image: image)!
+//
+//                    if fileExtension.lowercased() == ".png" {
+//                        if let data = resizedImage.pngData() {
+//                            try? data.write(to: fileURL)
+//                        }
+//                    } else if fileExtension.lowercased() == ".jpg" || fileExtension.lowercased() == ".jpeg" {
+//                        if let data = resizedImage.jpegData(compressionQuality: 1) {
+//                            try? data.write(to: fileURL)
+//                        }
+//                    } else {
+//                        return nil
+//                    }
+//
+//                    return fileURL.path
+//                } else {
+//                    return nil
+//                }
+//            } catch (let error) {
+//                print("Cannot copy item at \(srcURL) to \(fileURL): \(error)")
+//                return nil
+//            }
+//        } else {
+//            print("Failed to initialize destination file name")
+//            return nil
+//        }
+//    }
 
     func resizeImage(image: UIImage) -> UIImage! {
         if (self.maxSize == nil) {
@@ -180,20 +182,32 @@ public class ImageListView : NSObject, FlutterPlatformView {
                     option.isNetworkAccessAllowed = true
                     autoreleasepool {
                         let _ = asset.requestContentEditingInput(with: option) { (input, _) in
-                            let url = input?.fullSizeImageURL
-                            if let url = url {
-                                dict["albumId"] = nil
-                                let newFile = self.secureCopyItem(at: url)
-                                if let newFile = newFile {
-                                    dict["assetId"] = "\(newFile)"
-
+                            asset.getURL(completionHandler:  { responseUrl in
+                                if let url = responseUrl {
+                                    dict["albumId"] = self.albumId
+                                    dict["type"] = asset.mediaType == .video ? "VIDEO" : "IMAGE"
+                                    if asset.mediaType == .video {
+                                        dict["duration"] = String.init(asset.duration * 1000)
+                                    }
+                                    dict["assetId"] = "\(url.path)"
                                     selectedImages.append(dict)
 
                                     if selectedImages.count == self.assetStore.assets.count {
                                         flutterResult(selectedImages)
                                     }
+    //                                let newFile = self.secureCopyItem(at: url)
+    //                                if let newFile = newFile {
+    //                                    dict["assetId"] = "\(newFile)"
+    //
+    //                                    print("dict -> \(dict)")
+    //                                    selectedImages.append(dict)
+    //
+    //                                    if selectedImages.count == self.assetStore.assets.count {
+    //                                        flutterResult(selectedImages)
+    //                                    }
+    //                                }
                                 }
-                            }
+                            })
                         }
                     }
                 }
@@ -218,8 +232,24 @@ public class ImageListView : NSObject, FlutterPlatformView {
         if albums.count > 0 {
             allAlbums.append(albums)
         }
-
+        
+        
+        var imagePredicate: NSPredicate?
+        var videoPredicate: NSPredicate?
+        
+        if types.contains("IMAGE") {
+            imagePredicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+        }
+        
+        if types.contains("VIDEO") {
+            videoPredicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
+        }
+        
+        let finalPredicate = imagePredicate != nil && videoPredicate != nil ? NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!]) : imagePredicate != nil ? imagePredicate! : videoPredicate!
+        
         let fetchOptionsAssets = PHFetchOptions()
+        
+        fetchOptionsAssets.predicate = finalPredicate
 
         if let album = allAlbums.first?.firstObject {
             self.fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
@@ -268,6 +298,38 @@ extension ImageListView: UICollectionViewDataSource {
         let asset = self.fetchedImages[indexPath.row]
 
         cell.asset = asset
+        
+        if asset.mediaType == .video {
+            let (h,m,s) = secondsToHoursMinutesSeconds(seconds: Int(asset.duration))
+            
+            var durationText: String = ""
+            
+            if h > 0 {
+                durationText += "\(String(format: "%02d", h)):"
+            }
+            
+            if m > 0 {
+                durationText += "\(String(format: "%02d", m)):"
+            } else {
+                durationText += "0:"
+            }
+            
+            durationText += "\(String(format: "%02d", s))"
+            
+            cell.textView.text = durationText
+            cell.textView.textContainerInset = UIEdgeInsets(top: 2, left: 3,bottom: 2,right: 3)
+            
+            let fixedWidth = cell.textView.frame.size.width
+            let newSize = cell.textView.sizeThatFits(CGSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude))
+            cell.textView.frame.size = CGSize(width: max(newSize.width, fixedWidth), height: newSize.height)
+            
+            if #available(iOS 9.0, *) {
+                NSLayoutConstraint.activate([
+                    cell.textView.heightAnchor.constraint(equalToConstant: newSize.height),
+                cell.textView.widthAnchor.constraint(equalToConstant: max(newSize.width, fixedWidth))
+                ])
+            }
+        }
 
         if let collectionViewFlowLayout = self.uiCollectionView.collectionViewLayout as? GridCollectionViewLayout {
             self.imageSize = collectionViewFlowLayout.itemSize
@@ -305,6 +367,10 @@ extension ImageListView: UICollectionViewDataSource {
     func registerCellIdentifiersForCollectionView(_ collectionView: UICollectionView?) {
         collectionView?.register(PhotoCell.self, forCellWithReuseIdentifier: PhotoCell.cellIdentifier)
     }
+}
+
+func secondsToHoursMinutesSeconds (seconds : Int) -> (Int, Int, Int) {
+  return (seconds / 3600, (seconds % 3600) / 60, (seconds % 3600) % 60)
 }
 
 // MARK: UICollectionViewDelegate
@@ -375,5 +441,29 @@ public class ImageListViewFactory : NSObject, FlutterPlatformViewFactory {
     
     public func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
         return FlutterStandardMessageCodec.sharedInstance()
+    }
+}
+extension PHAsset {
+    func getURL(completionHandler : @escaping ((_ responseURL : URL?) -> Void)){
+        if self.mediaType == .image {
+            let options: PHContentEditingInputRequestOptions = PHContentEditingInputRequestOptions()
+            options.canHandleAdjustmentData = {(adjustmeta: PHAdjustmentData) -> Bool in
+            return true
+            }
+            self.requestContentEditingInput(with: options, completionHandler: {(contentEditingInput: PHContentEditingInput?, info: [AnyHashable : Any]) -> Void in
+            completionHandler(contentEditingInput!.fullSizeImageURL as URL?)
+            })
+        } else if self.mediaType == .video {
+            let options: PHVideoRequestOptions = PHVideoRequestOptions()
+            options.version = .original
+            PHImageManager.default().requestAVAsset(forVideo: self, options: options, resultHandler: {(asset: AVAsset?, audioMix: AVAudioMix?, info: [AnyHashable : Any]?) -> Void in
+                if let urlAsset = asset as? AVURLAsset {
+                    let localVideoUrl: URL = urlAsset.url as URL
+                    completionHandler(localVideoUrl)
+                } else {
+                    completionHandler(nil)
+                }
+            })
+        }
     }
 }

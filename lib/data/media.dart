@@ -7,7 +7,7 @@ class MediaData {
   final String? albumId;
   final String assetId;
   final MediaType type;
-  final String uri;
+  final String? uri;
 
   MediaData({
     required this.albumId,

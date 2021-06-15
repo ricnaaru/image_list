@@ -16,7 +16,7 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch (call.method) {
         case "getAlbums":
-            getAlbums(result: result)
+            getAlbums(call, result: result)
             break;
         case "checkPermission":
             checkPermission(result: result)
@@ -26,13 +26,29 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    private func getAlbums(result: @escaping FlutterResult) {
+    private func getAlbums(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? Dictionary<String, Any>
+        let types = (args?["types"] as? String) ?? "VIDEO-IMAGE"
+        
+        var imagePredicate: NSPredicate?
+        var videoPredicate: NSPredicate?
+        
+        if types.contains("IMAGE") {
+            imagePredicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+        }
+        
+        if types.contains("VIDEO") {
+            videoPredicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
+        }
+        
+        let finalPredicate = imagePredicate != nil && videoPredicate != nil ? NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!]) : imagePredicate != nil ? imagePredicate! :  videoPredicate != nil ? videoPredicate! : nil
         
         let fetchOptions = PHFetchOptions()
         
         let smartAlbums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumUserLibrary, options: fetchOptions)
         
         let albums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+        
         var arr = [Any]();
         let allAlbums: Array<PHFetchResult<PHAssetCollection>> = [smartAlbums, albums]
         
@@ -46,15 +62,12 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
                     opts.fetchLimit = 1
                 }
                 
-                var assetCount = asset.estimatedAssetCount
-                if assetCount == NSNotFound {
-                    let fetchOptions = PHFetchOptions()
-                    fetchOptions.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
-                    assetCount = PHAsset.fetchAssets(in: asset, options: fetchOptions).count
-                }
+                let fetchOptions = PHFetchOptions()
+                fetchOptions.predicate = finalPredicate
+                let assetCount = PHAsset.fetchAssets(in: asset, options: fetchOptions).count
                 
                 if assetCount > 0 {
-                    let item = ["name": asset.localizedTitle!, "identifier": asset.localIdentifier] as [String : Any]
+                    let item = ["name": asset.localizedTitle!, "identifier": asset.localIdentifier, "count": assetCount] as [String : Any]
                     arr.append(item)
                 }
             }

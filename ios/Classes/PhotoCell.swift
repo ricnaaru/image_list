@@ -30,6 +30,7 @@ final class PhotoCell: UICollectionViewCell {
     static let cellIdentifier = "photoCellIdentifier"
     
     let imageView: UIImageView = UIImageView(frame: .zero)
+    let textView: UITextView = UITextView(frame: .zero)
     
     private let selectionOverlayView: UIView = UIView(frame: .zero)
     private let selectionView: SelectionView = SelectionView(frame: .zero)
@@ -80,9 +81,18 @@ final class PhotoCell: UICollectionViewCell {
         selectionOverlayView.backgroundColor = UIColor.lightGray
         selectionOverlayView.translatesAutoresizingMaskIntoConstraints = false
         selectionView.translatesAutoresizingMaskIntoConstraints = false
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        
+        textView.textColor = UIColor.white
+        textView.backgroundColor = UIColor(red: 87 / 255, green: 87 / 255, blue: 87 / 255, alpha: 102 / 255)
+        
+        
+        textView.layer.cornerRadius = 4;
+        
         contentView.addSubview(imageView)
         contentView.addSubview(selectionOverlayView)
         contentView.addSubview(selectionView)
+        contentView.addSubview(textView)
         
         // Add constraints
         if #available(iOS 9.0, *) {
@@ -98,7 +108,9 @@ final class PhotoCell: UICollectionViewCell {
                 selectionView.heightAnchor.constraint(equalToConstant: 25),
                 selectionView.widthAnchor.constraint(equalToConstant: 25),
                 selectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
-                selectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4)
+                selectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
+                textView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+                textView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 4),
                 ])
         } else {
             // Fallback on earlier versions
