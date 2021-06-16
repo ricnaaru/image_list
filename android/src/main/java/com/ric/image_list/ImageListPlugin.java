@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -125,22 +126,32 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
     }
 
     private void getImageAlbumNames(Uri uri, HashMap<String, Pair<String, Integer>> albums) {
-        String[] projection = {"COUNT(*) as count",
-                MediaStore.Images.Media.BUCKET_ID,
+        String[] projection = {MediaStore.Images.Media.BUCKET_ID,
                 MediaStore.Images.Media.BUCKET_DISPLAY_NAME};
 
-        final String orderBy = MediaStore.Images.Media.DISPLAY_NAME;
-        Cursor cursor = context.getContentResolver().query(uri, projection, "1) GROUP BY (" + MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME, null, orderBy + " DESC");
+        final String orderBy = MediaStore.Images.Media.BUCKET_DISPLAY_NAME;
+        final Cursor cursor = context.getContentResolver().query(uri, projection, null, null, orderBy + " DESC");
 
-        if (cursor != null) {
-            int countKey = cursor.getColumnIndexOrThrow("count");
+        HashMap<String, Pair<String, Integer>> tempAlbums = new HashMap<>();
+
+        if (cursor != null && (cursor.moveToFirst())) {
             int columnIdKey = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID);
             int columnNameKey = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_DISPLAY_NAME);
 
-            while (cursor.moveToNext()) {
-                String columnId = cursor.getString(columnIdKey);
-                String columnName = cursor.getString(columnNameKey);
-                Integer count = cursor.getInt(countKey);
+            do {
+                final String bucketId = cursor.getString(columnIdKey);
+                final String bucketName = cursor.getString(columnNameKey);
+
+                if (!tempAlbums.containsKey(bucketName)) {
+                    final int count = getImageAlbumCount(uri, bucketId);
+                    tempAlbums.put(bucketName, new Pair<>(bucketId, count));
+                }
+            } while (cursor.moveToNext());
+
+            for (Map.Entry<String, Pair<String, Integer>> tempAlbum : tempAlbums.entrySet()) {
+                String columnId = tempAlbum.getValue().first;
+                String columnName = tempAlbum.getKey();
+                Integer count = tempAlbum.getValue().second;
 
                 if (albums.containsKey(columnName)) {
                     Pair<String, Integer> pair = albums.get(columnName);
@@ -156,23 +167,47 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
         }
     }
 
+    private int getImageAlbumCount(@NonNull final Uri contentUri, @NonNull final String bucketId) {
+        final Cursor cursor = context.getContentResolver().query(contentUri,
+                null, MediaStore.Images.Media.BUCKET_ID + "=?", new String[] {bucketId}, null);
+
+        return ((cursor == null) || (!cursor.moveToFirst())) ? 0 : cursor.getCount();
+    }
+
+    private int getVideoAlbumCount(@NonNull final Uri contentUri, @NonNull final String bucketId) {
+        final Cursor cursor = context.getContentResolver().query(contentUri,
+                null, MediaStore.Video.Media.BUCKET_ID + "=?", new String[] {bucketId}, null);
+
+        return ((cursor == null) || (!cursor.moveToFirst())) ? 0 : cursor.getCount();
+    }
+
     private void getVideoAlbumNames(Uri uri, HashMap<String, Pair<String, Integer>> albums) {
-        String[] projection = {"COUNT(*) as count",
-                MediaStore.Video.Media.BUCKET_ID,
+        String[] projection = {MediaStore.Video.Media.BUCKET_ID,
                 MediaStore.Video.Media.BUCKET_DISPLAY_NAME};
 
         final String orderBy = MediaStore.Video.Media.DISPLAY_NAME;
-        Cursor cursor = context.getContentResolver().query(uri, projection, "1) GROUP BY (" + MediaStore.Video.Media.BUCKET_DISPLAY_NAME, null, orderBy + " DESC");
+        final Cursor cursor = context.getContentResolver().query(uri, projection, null, null, orderBy + " DESC");
 
-        if (cursor != null) {
-            int countKey = cursor.getColumnIndexOrThrow("count");
+        HashMap<String, Pair<String, Integer>> tempAlbums = new HashMap<>();
+
+        if (cursor != null && (cursor.moveToFirst())) {
             int columnIdKey = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_ID);
             int columnNameKey = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_DISPLAY_NAME);
 
-            while (cursor.moveToNext()) {
-                String columnId = cursor.getString(columnIdKey);
-                String columnName = cursor.getString(columnNameKey);
-                Integer count = cursor.getInt(countKey);
+            do {
+                final String bucketId = cursor.getString(columnIdKey);
+                final String bucketName = cursor.getString(columnNameKey);
+
+                if (!tempAlbums.containsKey(bucketName)) {
+                    final int count = getVideoAlbumCount(uri, bucketId);
+                    tempAlbums.put(bucketName, new Pair<>(bucketId, count));
+                }
+            } while (cursor.moveToNext());
+
+            for (Map.Entry<String, Pair<String, Integer>> tempAlbum : tempAlbums.entrySet()) {
+                String columnId = tempAlbum.getValue().first;
+                String columnName = tempAlbum.getKey();
+                Integer count = tempAlbum.getValue().second;
 
                 if (albums.containsKey(columnName)) {
                     Pair<String, Integer> pair = albums.get(columnName);
