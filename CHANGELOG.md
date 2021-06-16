@@ -1,3 +1,7 @@
+## 2.0.3
+
+* Change Android SDK to 30
+
 ## 2.0.2
 
 * Add Video features for both IOS and Android
