@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_list/data/media.dart';
@@ -154,7 +155,7 @@ class _MyAppState extends State<MyApp> {
     ));
   }
 
-  void submit(BuildContext context) {
+  Future<void> submit(BuildContext context) async {
     if (this.controller != null)
       this.controller!.getSelectedMedia().then((res) {
         if (res == null) return;
@@ -188,9 +189,7 @@ class _MyAppState extends State<MyApp> {
           if (this.albums != null && this.albums!.isNotEmpty)
             this.currentAlbum = albums.first;
           if (controller != null && currentAlbum != null)
-            this
-                .controller!
-                .reloadAlbum(currentAlbum!.identifier);
+            this.controller!.reloadAlbum(currentAlbum!.identifier);
         });
     });
   }

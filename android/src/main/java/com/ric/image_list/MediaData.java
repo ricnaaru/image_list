@@ -1,6 +1,7 @@
 package com.ric.image_list;
 
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 

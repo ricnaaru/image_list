@@ -2,6 +2,7 @@
 
 * Add color parameter for ImageList and Item
 * Add selectedImages to onImageTapped
+* Add getThumbnail method
 
 ## 2.0.3
 

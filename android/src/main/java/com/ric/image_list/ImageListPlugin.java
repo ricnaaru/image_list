@@ -2,21 +2,32 @@ package com.ric.image_list;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
+import android.webkit.MimeTypeMap;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.Priority;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -82,6 +93,63 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
                         }
                     })
                     .check();
+        } else if (call.method.equals("getThumbnail")) {
+            String uriString = null;
+            Integer width = null;
+            Integer height = null;
+            Integer size = null;
+            Integer quality = 100;
+            Uri uri = null;
+            RequestOptions requestOptions = new RequestOptions();
+
+            if (call.arguments instanceof HashMap) {
+                Map<String, Object> params = (Map<String, Object>) call.arguments;
+                uriString = params.get("uri") == null ? null : params.get("uri").toString();
+                width = params.get("width") == null ? null : Integer.parseInt(params.get("width").toString());
+                height = params.get("height") == null ? null : Integer.parseInt(params.get("height").toString());
+                size = params.get("size") == null ? null : Integer.parseInt(params.get("size").toString());
+                quality = params.get("quality") == null ? 100 : Integer.parseInt(params.get("quality").toString());
+            }
+
+            if (uriString == null) {
+                result.success(null);
+            } else {
+                uri = Uri.parse(uriString);
+            }
+
+
+            if (width != null && height != null) {
+                requestOptions = requestOptions.override(width, height);
+            } else if (size != null) {
+                requestOptions = requestOptions.override(size);
+            }
+
+            ContentResolver contentResolver = context.getContentResolver();
+            MimeTypeMap mime = MimeTypeMap.getSingleton();
+            String type = mime.getExtensionFromMimeType(contentResolver.getType(uri));
+            final Bitmap.CompressFormat compressFormat = type.endsWith("png") ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+            final Integer finalQuality = quality;
+
+            Glide
+                    .with(context)
+                    .asBitmap()
+                    .load(uri)
+                    .apply(requestOptions)
+                    .priority(Priority.IMMEDIATE)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+                            resource.compress(compressFormat, finalQuality, bos);
+                            result.success(bos.toByteArray());
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            result.success(null);
+                        }
+                    });
         }
     }
 
@@ -169,14 +237,14 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
 
     private int getImageAlbumCount(@NonNull final Uri contentUri, @NonNull final String bucketId) {
         final Cursor cursor = context.getContentResolver().query(contentUri,
-                null, MediaStore.Images.Media.BUCKET_ID + "=?", new String[] {bucketId}, null);
+                null, MediaStore.Images.Media.BUCKET_ID + "=?", new String[]{bucketId}, null);
 
         return ((cursor == null) || (!cursor.moveToFirst())) ? 0 : cursor.getCount();
     }
 
     private int getVideoAlbumCount(@NonNull final Uri contentUri, @NonNull final String bucketId) {
         final Cursor cursor = context.getContentResolver().query(contentUri,
-                null, MediaStore.Video.Media.BUCKET_ID + "=?", new String[] {bucketId}, null);
+                null, MediaStore.Video.Media.BUCKET_ID + "=?", new String[]{bucketId}, null);
 
         return ((cursor == null) || (!cursor.moveToFirst())) ? 0 : cursor.getCount();
     }

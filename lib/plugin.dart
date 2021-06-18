@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/services.dart';
 import 'package:image_list/data/media.dart';
 
@@ -29,6 +31,27 @@ class ImageListPlugin {
     final bool hasPermission = await _channel.invokeMethod('checkPermission');
 
     return hasPermission;
+  }
+
+  static Future<Uint8List> getThumbnail({
+    required String imageUri,
+    int? width,
+    int? height,
+    int? size,
+    int quality = 100,
+  }) async {
+    final raw = await _channel.invokeMethod(
+      'getThumbnail',
+      {
+        'uri': imageUri,
+        'width': width,
+        'height': height,
+        'size': size,
+        'quality': quality,
+      },
+    );
+
+    return Uint8List.fromList(raw ?? <int>[]);
   }
 }
 
