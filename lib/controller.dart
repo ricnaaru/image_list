@@ -36,7 +36,16 @@ class ImageListController {
     switch (call.method) {
       case 'onImageTapped':
         int count = call.arguments['count'] as int;
-        _imageListState.onImageTapped(count);
+        List<MediaData> selectedMedias = <MediaData>[];
+        List<dynamic>? raw = await channel.invokeMethod('getSelectedMedia', null);
+
+        if (raw != null) {
+          selectedMedias = raw.map((map) {
+            return MediaData.fromJson(map);
+          }).toList();
+        }
+
+        _imageListState.onImageTapped(count, selectedMedias);
         break;
       default:
         throw MissingPluginException();

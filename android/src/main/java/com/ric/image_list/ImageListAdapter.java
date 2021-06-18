@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,13 +27,15 @@ import io.flutter.plugin.common.MethodChannel;
 public class ImageListAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private MediaData[] pickerImages;
+    private int itemColor;
     public ArrayList<MediaData> selectedImages;
     private OnPhotoActionListener actionListener;
     private Integer maxSelected;
     private final MethodChannel methodChannel;
 
-    public ImageListAdapter(MediaData[] pickerImages, ArrayList<MediaData> selectedImages, Integer maxSelected, MethodChannel methodChannel) {
+    public ImageListAdapter(MediaData[] pickerImages, int itemColor, ArrayList<MediaData> selectedImages, Integer maxSelected, MethodChannel methodChannel) {
         this.methodChannel = methodChannel;
+        this.itemColor = itemColor;
         this.pickerImages = pickerImages;
         this.selectedImages = selectedImages;
         this.maxSelected = maxSelected;
@@ -49,6 +52,7 @@ public class ImageListAdapter
         View view;
         view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.thumb_item, parent, false);
+        view.setBackgroundColor(itemColor);
         return new ViewHolderImage(view);
     }
 
@@ -78,8 +82,28 @@ public class ImageListAdapter
             public void onClick(View v) {
                 Boolean selected = onCheckStateChange(vh.item, image);
                 if (selected != null) {
+                    List<Map<String, String>> imageIdList = new ArrayList<>();
+
+                    for (int i = 0; i < selectedImages.size(); i++) {
+                        MediaData data = selectedImages.get(i);
+
+                        Map<String, String> map = new HashMap<>();
+                        map.put("type", data.getType().toString());
+                        map.put("albumId", data.getAlbumId());
+                        map.put("assetId", data.getAssetId());
+                        map.put("uri", data.getUri().toString());
+
+                        if (data instanceof VideoData) {
+                            map.put("duration", String.valueOf(((VideoData) data).duration));
+                        }
+
+
+                        imageIdList.add(map);
+                    }
+
                     Map<String, Object> params = new HashMap<String, Object>();
                     params.put("count", selectedImages.size());
+                    params.put("selectedImages", imageIdList);
                     methodChannel.invokeMethod("onImageTapped", params);
                 }
             }

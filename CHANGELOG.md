@@ -1,3 +1,8 @@
+## Unreleased
+
+* Add color parameter for ImageList and Item
+* Add selectedImages to onImageTapped
+
 ## 2.0.3
 
 * Change Android SDK to 30

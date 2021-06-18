@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -20,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.loader.content.CursorLoader;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
@@ -61,6 +64,8 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private List<String> types = new ArrayList<>();
     private View view;
     private ArrayList<MediaData> selectedImages = new ArrayList<>();
+    private int imageListColor;
+    private int itemColor;
 
     ImageList(
             int id,
@@ -79,6 +84,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.requestDisallowInterceptTouchEvent(true);
 
+
         if (args instanceof HashMap) {
             Map<String, Object> params = (Map<String, Object>) args;
             String typesRaw = params.get("types") == null ? "VIDEO-IMAGE" : params.get("types").toString();
@@ -87,6 +93,10 @@ public class ImageList implements MethodChannel.MethodCallHandler,
             maxImage = params.get("maxImage") == null ? null : Integer.valueOf(params.get("maxImage").toString());
             maxSize = params.get("maxSize") == null ? null : Integer.valueOf(params.get("maxSize").toString());
             fileNamePrefix = params.get("fileNamePrefix").toString();
+            String imageListColorString = params.get("imageListColor").toString();
+            imageListColor = Color.parseColor("#" + imageListColorString);
+            String itemColorString = params.get("itemColor").toString();
+            itemColor = Color.parseColor("#" + itemColorString);
 
             if (params.get("selections") != null) {
                 List selections = (ArrayList) params.get("selections");
@@ -110,6 +120,8 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 }
             }
         }
+
+        recyclerView.setBackgroundColor(imageListColor);
 
         if (checkPermission()) {
             long bucketId = 0;
@@ -170,7 +182,14 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
                     }
 
-                    new DisplayImage(context, this, bucketId, true, types).execute();
+                    this.setAdapter(new MediaData[]{});
+                    try {
+                        new DisplayImage(context, this, bucketId, true, types).execute().get();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 result.success(true);
@@ -319,7 +338,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
     private ImageListAdapter adapter;
 
     void setAdapter(MediaData[] result) {
-        adapter = new ImageListAdapter(result, selectedImages, maxImage, methodChannel);
+        adapter = new ImageListAdapter(result, itemColor, selectedImages, maxImage, methodChannel);
         adapter.setActionListener(new ImageListAdapter.OnPhotoActionListener() {
             @Override
             public void onDeselect() {
@@ -430,6 +449,7 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
     private Boolean exceptGif;
     private ContentResolver resolver;
     private List<String> types;
+    private long first;
 
     DisplayImage(Context context, ImageList imageList, Long bucketId,
                  Boolean exceptGif, List<String> types) {
@@ -438,6 +458,7 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
         this.exceptGif = exceptGif;
         this.resolver = context.getContentResolver();
         this.types = types;
+        first = System.currentTimeMillis();
     }
 
     @Override
@@ -448,6 +469,8 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
     @Override
     protected void onPostExecute(MediaData[] result) {
         super.onPostExecute(result);
+        long now = System.currentTimeMillis();
+        Log.d("ricric", "Reload Album Done " + (now - first));
         imageList.setAdapter(result);
     }
 

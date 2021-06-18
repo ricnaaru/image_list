@@ -26,7 +26,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-
     getAlbums();
   }
 
@@ -129,7 +128,7 @@ class _MyAppState extends State<MyApp> {
                             types: types,
                             maxImages: 1,
                             albumId: currentAlbum?.identifier ?? "",
-                            onImageTapped: (count) {
+                            onImageTapped: (count, selectedMedias) {
                               if (!multipleMode) {
                                 submit(context);
                               }

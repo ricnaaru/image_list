@@ -12,7 +12,7 @@ import 'data/media.dart';
 part 'controller.dart';
 
 typedef void ListCreatedCallback(ImageListController controller);
-typedef void ImageTappedCallback(int count);
+typedef void ImageTappedCallback(int count, List<MediaData> selectedMedias);
 
 class ImageList extends StatefulWidget {
   final String? albumId;
@@ -23,6 +23,8 @@ class ImageList extends StatefulWidget {
   final ListCreatedCallback? onListCreated;
   final ImageTappedCallback? onImageTapped;
   final List<MediaType> types;
+  final Color imageListColor;
+  final Color itemColor;
 
   ImageList({
     this.albumId,
@@ -33,6 +35,8 @@ class ImageList extends StatefulWidget {
     this.onListCreated,
     this.onImageTapped,
     required this.types,
+    this.imageListColor = Colors.white,
+    this.itemColor = Colors.white,
   });
 
   @override
@@ -81,7 +85,9 @@ class _ImageListState extends State<ImageList> {
           : widget.selections!.map((imageData) => imageData.toMap()).toList(),
       'types': widget.types
           .map((e) => e.toString().replaceAll("MediaType.", "").toUpperCase())
-          .join("-")
+          .join("-"),
+      'imageListColor': widget.imageListColor.value.toRadixString(16),
+      'itemColor': widget.itemColor.value.toRadixString(16),
     };
 
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -116,9 +122,9 @@ class _ImageListState extends State<ImageList> {
     }
   }
 
-  void onImageTapped(int count) {
+  void onImageTapped(int count, List<MediaData> selectedMedias) {
     if (widget.onImageTapped != null) {
-      widget.onImageTapped!(count);
+      widget.onImageTapped!(count, selectedMedias);
     }
   }
 }
