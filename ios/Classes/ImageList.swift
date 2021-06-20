@@ -32,6 +32,8 @@ public class ImageListView : NSObject, FlutterPlatformView {
     var maxImage: Int?
     var fileNamePrefix: String = ""
     var types: String = ""
+    var imageListColor: String = ""
+    var itemColor: String = ""
 
     init(_ frame: CGRect, viewId: Int64, args: Any?, with registrar: FlutterPluginRegistrar) {
         self.frame = frame
@@ -47,6 +49,8 @@ public class ImageListView : NSObject, FlutterPlatformView {
             self.maxSize = dict["maxSize"] as? Int
             self.fileNamePrefix = (dict["fileNamePrefix"] as? String)!
             self.types = (dict["types"] as? String)!
+            self.imageListColor = (dict["imageListColor"] as? String)!
+            self.itemColor = (dict["itemColor"] as? String)!
         }
 
         assetStore = AssetStore(assets: [Asset?](repeating: nil, count: selections.count))
@@ -60,7 +64,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
         self.uiCollectionView.delegate = self
         self.registerCellIdentifiersForCollectionView(self.uiCollectionView)
         self.uiCollectionView.alwaysBounceVertical = true
-        self.uiCollectionView.backgroundColor = .white
+        self.uiCollectionView.backgroundColor = UIColor.init(argb: Int(imageListColor, radix: 16) ?? 0xffababab)
 
         loadImage()
 
@@ -95,7 +99,9 @@ public class ImageListView : NSObject, FlutterPlatformView {
 
                 result(nil)
             } else if call.method == "getSelectedMedia" {
-                self.getSelectedImages(result)
+                self.getSelectedImages(completionHandler: { images in
+                    result(images)
+                })
             }
         }
     }
@@ -169,11 +175,11 @@ public class ImageListView : NSObject, FlutterPlatformView {
         return newImage
     }
 
-    private func getSelectedImages(_ flutterResult: @escaping FlutterResult) {
+    private func getSelectedImages(completionHandler : @escaping (([[String: String]]) -> Void)) {
         var selectedImages: [[String: String]] = []
 
         if self.assetStore.assets.count == 0 {
-            flutterResult(nil)
+            completionHandler(selectedImages)
         } else {
             for i in 0...self.assetStore.assets.count - 1 {
                 var dict: [String: String] = [String:String]()
@@ -190,10 +196,11 @@ public class ImageListView : NSObject, FlutterPlatformView {
                                         dict["duration"] = String.init(asset.duration * 1000)
                                     }
                                     dict["assetId"] = "\(url.path)"
+                                    dict["uri"] = "\(url.path)"
                                     selectedImages.append(dict)
 
                                     if selectedImages.count == self.assetStore.assets.count {
-                                        flutterResult(selectedImages)
+                                        completionHandler(selectedImages)
                                     }
     //                                let newFile = self.secureCopyItem(at: url)
     //                                if let newFile = newFile {
@@ -400,7 +407,6 @@ extension ImageListView: UICollectionViewDelegate {
             assetStore.removeAll()
             assetStore.append(asset, self.albumId)
             cell.singlePhotoSelected()
-            _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
         } else {
             if assetStore.contains(asset) { // Deselect
                 // Deselect asset
@@ -419,13 +425,13 @@ extension ImageListView: UICollectionViewDelegate {
                     return IndexPath(item: index, section: 0)
                 })
                 
+                cell.backgroundColor = UIColor.init(argb: Int(itemColor, radix: 16) ?? 0xffababab)
                 // Reload selected cells to update their selection number
                 UIView.setAnimationsEnabled(false)
                 collectionView.reloadItems(at: selectedIndexPaths)
                 UIView.setAnimationsEnabled(true)
                 
                 cell.photoSelected = false
-                _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
             } else if maxImage == nil || assetStore.count < maxImage! { // Select
                 // Select asset if not already selected
                 assetStore.append(asset, self.albumId)
@@ -436,9 +442,12 @@ extension ImageListView: UICollectionViewDelegate {
                     
                     cell.photoSelected = true
                 }
-                _channel.invokeMethod("onImageTapped", arguments: ["count": assetStore.count])
             }
         }
+        
+        self.getSelectedImages(completionHandler: { images in
+            self._channel.invokeMethod("onImageTapped", arguments: ["count": self.assetStore.count, "selectedImages": images])
+        })
         
         return false
     }
@@ -459,6 +468,7 @@ public class ImageListViewFactory : NSObject, FlutterPlatformViewFactory {
         return FlutterStandardMessageCodec.sharedInstance()
     }
 }
+
 extension PHAsset {
     func getURL(completionHandler : @escaping ((_ responseURL : URL?) -> Void)){
         if self.mediaType == .image {
@@ -481,5 +491,25 @@ extension PHAsset {
                 }
             })
         }
+    }
+}
+
+extension UIColor {
+    convenience init(red: Int, green: Int, blue: Int, a: Int = 0xFF) {
+        self.init(
+            red: CGFloat(red) / 255.0,
+            green: CGFloat(green) / 255.0,
+            blue: CGFloat(blue) / 255.0,
+            alpha: CGFloat(a) / 255.0
+        )
+    }
+
+    convenience init(argb: Int) {
+        self.init(
+            red: (argb >> 16) & 0xFF,
+            green: (argb >> 8) & 0xFF,
+            blue: argb & 0xFF,
+            a: (argb >> 24) & 0xFF
+        )
     }
 }

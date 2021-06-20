@@ -160,23 +160,39 @@ class _MyAppState extends State<MyApp> {
       this.controller!.getSelectedMedia().then((res) {
         if (res == null) return;
 
-        File f = File(res.first.assetId);
-        late Widget preview;
+        ImageListPlugin.getThumbnail(size: 100, imageUri: res.first.uri!).then((value) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return Scaffold(
+                  appBar: AppBar(
+                    title: Text("lalala"),
+                  ),
+                  body: Center(child: Image.memory(value)),
+                );
+              },
+            ),
+          );
+        });
 
-        if (res.first.type == MediaType.video) {
-          preview = VideoPreview(videoFile: f);
-        } else {
-          preview = ImagePreview(file: f);
-        }
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) {
-              return preview;
-            },
-          ),
-        );
+        // File f = File(res.first.assetId);
+        // late Widget preview;
+        //
+        // if (res.first.type == MediaType.video) {
+        //   preview = VideoPreview(videoFile: f);
+        // } else {
+        //   preview = ImagePreview(file: f);
+        // }
+        //
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (BuildContext context) {
+        //       return preview;
+        //     },
+        //   ),
+        // );
       });
   }
 

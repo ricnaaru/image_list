@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import Photos
+import AVFoundation
 
 public class SwiftImageListPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -17,6 +18,9 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
         switch (call.method) {
         case "getAlbums":
             getAlbums(call, result: result)
+            break;
+        case "getThumbnail":
+            getThumbnail(call, result: result)
             break;
         case "checkPermission":
             checkPermission(result: result)
@@ -88,6 +92,103 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
         result(arr)
     }
     
+    private func getThumbnail(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? Dictionary<String, Any>
+        let uri = (args?["uri"] as? String)
+        var width = (args?["width"] as? CGFloat)
+        var height = (args?["height"] as? CGFloat)
+        let size = (args?["size"] as? CGFloat)
+        let quality = (args?["quality"] as? CGFloat) ?? 100
+        
+        if uri == nil {
+            result(nil)
+            return
+        }
+        
+        let url = URL(fileURLWithPath: uri!)
+        let imgData = try? Data(contentsOf: url)
+        
+        if imgData == nil {
+            result(nil)
+            return
+        }
+        
+        var format: String = "unknown"
+        
+        switch imgData![0] {
+        case 0x89:
+            format = "png"
+        case 0xFF:
+            format = "jpg"
+        case 0x47:
+            format = "gif"
+        case 0x49, 0x4D:
+            format = "tiff"
+        case 0x52 where imgData!.count >= 12:
+            let subdata = imgData![0...11]
+
+            if let dataString = String(data: subdata, encoding: .ascii),
+                dataString.hasPrefix("RIFF"),
+                dataString.hasSuffix("WEBP") {
+                format = "webp"
+            }
+
+        case 0x00 where imgData!.count >= 12 :
+            let subdata = imgData![8...11]
+
+            if let dataString = String(data: subdata, encoding: .ascii),
+                Set(["heic", "heix", "hevc", "hevx"]).contains(dataString) {
+                format = "heic"
+            }
+        default:
+            format = "unknown"
+        }
+        
+        var rawImage = format == "unknown" ? getVideoThumbnail(forUrl: url) : UIImage(data: imgData!)
+        
+        if rawImage == nil {
+            result(nil)
+            return
+        }
+        
+        var image: UIImage? = rawImage
+        
+        if size != nil || (width != nil && height != nil) {
+            if (width == nil || height == nil) {
+                width = size
+                height = size
+            }
+
+            image = resizeImage(image: image!, newWidth: width!, newHeight: height!)
+        }
+        
+        
+        result(image?.jpegData(compressionQuality: quality))
+    }
+    
+    func getVideoThumbnail(forUrl url: URL) -> UIImage? {
+        let asset: AVAsset = AVAsset(url: url)
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+
+        do {
+            let thumbnailImage = try imageGenerator.copyCGImage(at: CMTimeMake(value: 1, timescale: 60) , actualTime: nil)
+            return UIImage(cgImage: thumbnailImage)
+        } catch let error {
+            print(error)
+        }
+
+        return nil
+    }
+    
+    func resizeImage(image: UIImage, newWidth: CGFloat, newHeight: CGFloat) -> UIImage? {
+        UIGraphicsBeginImageContext(CGSize(width: newWidth, height: newHeight))
+        image.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return newImage
+    }
+    
     private func checkPermission(result: @escaping FlutterResult) {
         let photos = PHPhotoLibrary.authorizationStatus()
         if photos != .authorized {
@@ -102,4 +203,33 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
             result(true)
         }
     }
+}
+
+extension UIImage {
+    func pixelData() -> [UInt8]? {
+        let size = self.size
+        let dataSize = size.width * size.height * 4
+        var pixelData = [UInt8](repeating: 0, count: Int(dataSize))
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let context = CGContext(data: &pixelData,
+                                width: Int(size.width),
+                                height: Int(size.height),
+                                bitsPerComponent: 8,
+                                bytesPerRow: 4 * Int(size.width),
+                                space: colorSpace,
+                                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
+        guard let cgImage = self.cgImage else { return nil }
+        context?.draw(cgImage, in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+
+        return pixelData
+    }
+ }
+
+
+struct ImageHeaderData{
+    static var PNG: [UInt8] = [0x89]
+    static var JPEG: [UInt8] = [0xFF]
+    static var GIF: [UInt8] = [0x47]
+    static var TIFF_01: [UInt8] = [0x49]
+    static var TIFF_02: [UInt8] = [0x4D]
 }
