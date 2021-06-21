@@ -108,9 +108,9 @@ final class PhotoCell: UICollectionViewCell {
                 selectionView.heightAnchor.constraint(equalToConstant: 25),
                 selectionView.widthAnchor.constraint(equalToConstant: 25),
                 selectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
-                selectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
-                textView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
-                textView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 4),
+                selectionView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+                textView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
+                textView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
                 ])
         } else {
             // Fallback on earlier versions
