@@ -1,3 +1,7 @@
+## 2.0.4+2
+
+* Change Selection and Duration Text the same position as Android for IOS
+
 ## 2.0.4+1
 
 * Fix images sorting problem on IOS
