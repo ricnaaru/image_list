@@ -269,6 +269,8 @@ public class ImageListView : NSObject, FlutterPlatformView {
         let fetchOptionsAssets = PHFetchOptions()
         
         fetchOptionsAssets.predicate = finalPredicate!
+        let sortOrder = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        fetchOptionsAssets.sortDescriptors = sortOrder
 
         if let album = allAlbums.first?.firstObject {
             self.fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
