@@ -1,6 +1,7 @@
 package com.ric.image_list;
 
 import android.net.Uri;
+import android.util.Log;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
@@ -10,6 +11,7 @@ public class GlideAdapter implements ImageAdapter {
     @Override
     public void loadImage(ImageView target, Uri loadUrl) {
         RequestOptions options = new RequestOptions().centerCrop();
+        Log.d("ricric", "loadImage " + loadUrl);
         Glide
                 .with(target.getContext())
                 .load(loadUrl)

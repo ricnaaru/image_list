@@ -18,8 +18,12 @@ import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
@@ -99,8 +103,6 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
             Integer height = null;
             Integer size = null;
             Integer quality = 100;
-            Uri uri = null;
-            RequestOptions requestOptions = new RequestOptions();
 
             if (call.arguments instanceof HashMap) {
                 Map<String, Object> params = (Map<String, Object>) call.arguments;
@@ -111,45 +113,74 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
                 quality = params.get("quality") == null ? 100 : Integer.parseInt(params.get("quality").toString());
             }
 
-            if (uriString == null) {
-                result.success(null);
-            } else {
-                uri = Uri.parse(uriString);
+            if (size != null) {
+                width = size;
+                height = size;
             }
 
+            ThumbnailCallback callback = new ThumbnailCallback() {
+                @Override
+                public void onThumbnailReady(byte[] bytes) {
+                    result.success(bytes);
+                }
+            };
 
-            if (width != null && height != null) {
-                requestOptions = requestOptions.override(width, height);
-            } else if (size != null) {
-                requestOptions = requestOptions.override(size);
+            getThumbnail(callback, uriString, width, height, quality, "");
+        } else if (call.method.equals("getAlbumThumbnail")) {
+            String albumUriString = null;
+            Integer width = null;
+            Integer height = null;
+            Integer size = null;
+            Integer quality = 100;
+            ContentResolver resolver = context.getContentResolver();
+
+            if (call.arguments instanceof HashMap) {
+                Map<String, Object> params = (Map<String, Object>) call.arguments;
+                albumUriString = params.get("albumUri") == null ? null : params.get("albumUri").toString();
+                width = params.get("width") == null ? null : Integer.parseInt(params.get("width").toString());
+                height = params.get("height") == null ? null : Integer.parseInt(params.get("height").toString());
+                size = params.get("size") == null ? null : Integer.parseInt(params.get("size").toString());
+                quality = params.get("quality") == null ? 100 : Integer.parseInt(params.get("quality").toString());
             }
 
-            ContentResolver contentResolver = context.getContentResolver();
-            MimeTypeMap mime = MimeTypeMap.getSingleton();
-            String type = mime.getExtensionFromMimeType(contentResolver.getType(uri));
-            final Bitmap.CompressFormat compressFormat = type.endsWith("png") ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
-            final Integer finalQuality = quality;
+            String selection = " ( " + MediaStore.Files.FileColumns.MEDIA_TYPE + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
+                    + " OR "
+                    + MediaStore.Files.FileColumns.MEDIA_TYPE + "=" + MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO + " ) "
+                    + " AND " + MediaStore.Images.Media.BUCKET_ID + " = ?";
+            String sort = MediaStore.Files.FileColumns.DATE_ADDED + " DESC";
+            String[] selectionArgs = {albumUriString};
 
-            Glide
-                    .with(context)
-                    .asBitmap()
-                    .load(uri)
-                    .apply(requestOptions)
-                    .priority(Priority.IMMEDIATE)
-                    .into(new CustomTarget<Bitmap>() {
-                        @Override
-                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
-                            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            Uri queryUri = MediaStore.Files.getContentUri("external");
+            Cursor c = resolver.query(queryUri, null, selection, selectionArgs, sort);
 
-                            resource.compress(compressFormat, finalQuality, bos);
-                            result.success(bos.toByteArray());
-                        }
+            String path = "";
 
-                        @Override
-                        public void onLoadCleared(@Nullable Drawable placeholder) {
-                            result.success(null);
-                        }
-                    });
+            if (c != null) {
+                try {
+                    if (c.moveToFirst()) {
+                        int imgId = c.getInt(c.getColumnIndex(MediaStore.MediaColumns._ID));
+                        Uri uri = Uri.withAppendedPath(queryUri, "" + imgId);
+                        path = uri.toString();
+                    }
+                    c.close();
+                } catch (Exception e) {
+                    if (!c.isClosed()) c.close();
+                }
+            }
+
+            if (size != null) {
+                width = size;
+                height = size;
+            }
+
+            ThumbnailCallback callback = new ThumbnailCallback() {
+                @Override
+                public void onThumbnailReady(byte[] bytes) {
+                    result.success(bytes);
+                }
+            };
+            
+            getThumbnail(callback, path, width, height, quality, albumUriString);
         }
     }
 
@@ -290,4 +321,58 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
             cursor.close();
         }
     }
+
+    public void getThumbnail(final ThumbnailCallback callback, String url, Integer width, Integer height, int quality, final String x) {
+        Uri uri = null;
+        RequestOptions requestOptions = new RequestOptions();
+
+        if (width != null && height != null) {
+            requestOptions = requestOptions.override(width, height);
+        }
+
+        if (url == null) {
+            callback.onThumbnailReady(null);
+        } else {
+            uri = Uri.parse(url);
+        }
+
+        ContentResolver contentResolver = context.getContentResolver();
+        MimeTypeMap mime = MimeTypeMap.getSingleton();
+        String type = mime.getExtensionFromMimeType(contentResolver.getType(uri));
+        Log.d("ricric", "url > " + url);
+        final Bitmap.CompressFormat compressFormat = type != null && type.endsWith("png") ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+        final Integer finalQuality = quality;
+
+        final Uri finalUri = uri;
+        Glide
+                .with(context)
+                .asBitmap()
+                .load(uri)
+                .apply(requestOptions)
+                .priority(Priority.IMMEDIATE)
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+                        resource.compress(compressFormat, finalQuality, bos);
+                        callback.onThumbnailReady(bos.toByteArray());
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                        callback.onThumbnailReady(null);
+                    }
+
+                    @Override
+                    public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                        super.onLoadFailed(errorDrawable);
+                        Log.d("ricric", "failed on (" +  x + ") " + finalUri);
+                    }
+                });
+    }
+}
+
+interface ThumbnailCallback {
+    public void onThumbnailReady(byte[] bytes);
 }

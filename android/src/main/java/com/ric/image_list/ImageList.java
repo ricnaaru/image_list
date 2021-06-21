@@ -469,8 +469,7 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
     @Override
     protected void onPostExecute(MediaData[] result) {
         super.onPostExecute(result);
-        long now = System.currentTimeMillis();
-        Log.d("ricric", "Reload Album Done " + (now - first));
+        
         imageList.setAdapter(result);
     }
 
