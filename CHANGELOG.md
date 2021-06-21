@@ -1,4 +1,4 @@
-## Unreleased
+## 2.0.4
 
 * Add color parameter for ImageList and Item
 * Add selectedImages to onImageTapped
