@@ -1,3 +1,7 @@
+## 2.0.4+1
+
+* Fix images sorting problem on IOS
+
 ## 2.0.4
 
 * Add color parameter for ImageList and Item
