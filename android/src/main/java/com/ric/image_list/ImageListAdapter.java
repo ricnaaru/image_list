@@ -185,12 +185,14 @@ public class ImageListAdapter
                            final boolean isSelected,
                            final boolean isAnimation,
                            final View overlay) {
+        final boolean finalIsAnimation = false;
         int duration = 100;
-        if (!isAnimation) duration = 0;
-        final float toScale = 0.95f;
+        if (!finalIsAnimation) duration = 0;
+        final float toScale = 1f;
 
         if (view.getTag(R.id.isViewAnimating) != null && Boolean.valueOf(view.getTag(R.id.isViewAnimating).toString()))
             return;
+
         final float alpha = isSelected ? 0.3f : 0.0f;
 
         ViewCompat.animate(view)
@@ -219,11 +221,10 @@ public class ImageListAdapter
                     public void run() {
                         view.setTag(R.id.isViewAnimating, false);
                         overlay.setAlpha(alpha);
-                        if (isAnimation && !isSelected) actionListener.onDeselect();
+                        if (finalIsAnimation && !isSelected) actionListener.onDeselect();
                     }
                 })
                 .start();
-
     }
 
     @Override
