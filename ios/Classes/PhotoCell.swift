@@ -29,6 +29,8 @@ import Photos
 final class PhotoCell: UICollectionViewCell {
     static let cellIdentifier = "photoCellIdentifier"
     
+    var multipleMode: Bool = false
+    
     let imageView: UIImageView = UIImageView(frame: .zero)
     let textView: UITextView = UITextView(frame: .zero)
     
@@ -52,22 +54,22 @@ final class PhotoCell: UICollectionViewCell {
             self.updateAccessibilityLabel(photoSelected)
             let hasChanged = photoSelected != oldValue
             
-            if UIView.areAnimationsEnabled && hasChanged {
-                UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
-                    // Set alpha for views
-                    self.updateAlpha(self.photoSelected)
-                    
-                    // Scale all views down a little
-                    self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
-                }, completion: { (finished: Bool) -> Void in
-                    UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
-                        // And then scale them back upp again to give a bounce effect
-                        self.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-                    }, completion: nil)
-                })
-            } else {
+//            if UIView.areAnimationsEnabled && hasChanged {
+////                UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
+//                    // Set alpha for views
+//                    self.updateAlpha(self.photoSelected)
+//
+////                    // Scale all views down a little
+////                    self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+////                }, completion: { (finished: Bool) -> Void in
+////                    UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
+////                        // And then scale them back upp again to give a bounce effect
+////                        self.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+////                    }, completion: nil)
+////                })
+//            } else {
                 updateAlpha(photoSelected)
-            }
+//            }
         }
     }
     
@@ -108,9 +110,9 @@ final class PhotoCell: UICollectionViewCell {
                 selectionView.heightAnchor.constraint(equalToConstant: 25),
                 selectionView.widthAnchor.constraint(equalToConstant: 25),
                 selectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
-                selectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
-                textView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
-                textView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 4),
+                selectionView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+                textView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
+                textView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
                 ])
         } else {
             // Fallback on earlier versions
@@ -122,15 +124,15 @@ final class PhotoCell: UICollectionViewCell {
     }
     
     func singlePhotoSelected() {
-            UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
-                // Scale all views down a little
-                self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
-            }, completion: { (finished: Bool) -> Void in
-                UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
-                    // And then scale them back upp again to give a bounce effect
-                    self.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-                }, completion: nil)
-            })
+//            UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
+//                // Scale all views down a little
+//                self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+//            }, completion: { (finished: Bool) -> Void in
+//                UIView.animate(withDuration: TimeInterval(0.1), animations: { () -> Void in
+//                    // And then scale them back upp again to give a bounce effect
+//                    self.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+//                }, completion: nil)
+//            })
     }
     
     func updateAccessibilityLabel(_ selected: Bool) {
@@ -142,7 +144,7 @@ final class PhotoCell: UICollectionViewCell {
             self.selectionView.alpha = 1.0
             self.selectionOverlayView.alpha = 0.3
         } else {
-            self.selectionView.alpha = 0.0
+            self.selectionView.alpha = multipleMode ? 1.0 : 0.0
             self.selectionOverlayView.alpha = 0.0
         }
     }

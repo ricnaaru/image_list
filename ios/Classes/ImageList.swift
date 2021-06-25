@@ -310,6 +310,7 @@ extension ImageListView: UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PhotoCell.cellIdentifier, for: indexPath) as! PhotoCell
         cell.accessibilityIdentifier = "photo_cell_\(indexPath.item)"
         cell.isAccessibilityElement = true
+        cell.multipleMode = maxImage != 1
 
         // Cancel any pending image requests
         if cell.tag != 0 {
@@ -402,6 +403,7 @@ func secondsToHoursMinutesSeconds (seconds : Int) -> (Int, Int, Int) {
 extension ImageListView: UICollectionViewDelegate {
     public func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
         guard let cell = collectionView.cellForItem(at: indexPath) as? PhotoCell else { return false }
+        cell.multipleMode = maxImage != 1
         
         let asset = fetchedImages.object(at: indexPath.row)
         

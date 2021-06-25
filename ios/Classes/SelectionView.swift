@@ -58,9 +58,11 @@ import UIKit
         let checkedOvalPath = UIBezierPath(ovalIn: CGRect(x: group.minX + floor(group.width * 0.0 + 0.5), y: group.minY + floor(group.height * 0.0 + 0.5), width: floor(group.width * 1.0 + 0.5) - floor(group.width * 0.0 + 0.5), height: floor(group.height * 1.0 + 0.5) - floor(group.height * 0.0 + 0.5)))
         context?.saveGState()
         
-        UIView().tintColor.setFill()
-        checkedOvalPath.fill()
-        context?.restoreGState()
+        if (!selectionString.isEmpty){
+            UIView().tintColor.setFill()
+            checkedOvalPath.fill()
+            context?.restoreGState()
+        }
         
         UIColor.white.setStroke()
         checkedOvalPath.lineWidth = 1

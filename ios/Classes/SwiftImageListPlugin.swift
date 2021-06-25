@@ -22,6 +22,9 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
         case "getThumbnail":
             getThumbnail(call, result: result)
             break;
+        case "getAlbumThumbnail":
+            getAlbumThumbnail(call, result: result)
+            break;
         case "checkPermission":
             checkPermission(result: result)
             break;
@@ -144,7 +147,7 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
             format = "unknown"
         }
         
-        var rawImage = format == "unknown" ? getVideoThumbnail(forUrl: url) : UIImage(data: imgData!)
+        let rawImage = format == "unknown" ? getVideoThumbnail(forUrl: url) : UIImage(data: imgData!)
         
         if rawImage == nil {
             result(nil)
@@ -164,6 +167,121 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
         
         
         result(image?.jpegData(compressionQuality: quality))
+    }
+    
+    private func getAlbumThumbnail(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? Dictionary<String, Any>
+        let albumUri = (args?["albumUri"] as? String)
+        var width = (args?["width"] as? CGFloat)
+        var height = (args?["height"] as? CGFloat)
+        let size = (args?["size"] as? CGFloat)
+        let quality = (args?["quality"] as? CGFloat) ?? 100
+        
+        if albumUri == nil {
+            result(nil)
+            return
+        }
+        
+        getFirstImageOfAlbum(albumUri: albumUri!, completionHandler: { url in
+            let finalUrl = url ?? URL(fileURLWithPath: "")
+            let imgData = try? Data(contentsOf: finalUrl)
+            
+            if imgData == nil {
+                result(nil)
+                return
+            }
+            
+            var format: String = "unknown"
+            
+            switch imgData![0] {
+            case 0x89:
+                format = "png"
+            case 0xFF:
+                format = "jpg"
+            case 0x47:
+                format = "gif"
+            case 0x49, 0x4D:
+                format = "tiff"
+            case 0x52 where imgData!.count >= 12:
+                let subdata = imgData![0...11]
+
+                if let dataString = String(data: subdata, encoding: .ascii),
+                    dataString.hasPrefix("RIFF"),
+                    dataString.hasSuffix("WEBP") {
+                    format = "webp"
+                }
+
+            case 0x00 where imgData!.count >= 12 :
+                let subdata = imgData![8...11]
+
+                if let dataString = String(data: subdata, encoding: .ascii),
+                    Set(["heic", "heix", "hevc", "hevx"]).contains(dataString) {
+                    format = "heic"
+                }
+            default:
+                format = "unknown"
+            }
+            
+            let rawImage = format == "unknown" ? self.getVideoThumbnail(forUrl: finalUrl) : UIImage(data: imgData!)
+            
+            if rawImage == nil {
+                result(nil)
+                return
+            }
+            
+            var image: UIImage? = rawImage
+            
+            if size != nil || (width != nil && height != nil) {
+                if (width == nil || height == nil) {
+                    width = size
+                    height = size
+                }
+
+                image = self.resizeImage(image: image!, newWidth: width!, newHeight: height!)
+            }
+            
+            
+            result(image?.jpegData(compressionQuality: quality))
+        })
+    }
+    
+    private func getFirstImageOfAlbum(albumUri: String, completionHandler : @escaping ((_ responseURL : URL?) -> Void)) {
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.predicate = NSPredicate(format: "localIdentifier = %@", albumUri)
+        let smartAlbums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumUserLibrary, options: fetchOptions)
+
+        let albums: PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+
+        var allAlbums: Array<PHFetchResult<PHAssetCollection>> = []
+
+        if smartAlbums.count > 0 {
+            allAlbums.append(smartAlbums)
+        }
+
+        if albums.count > 0 {
+            allAlbums.append(albums)
+        }
+        
+        
+        let imagePredicate: NSPredicate? = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+        let videoPredicate: NSPredicate? = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
+        
+        let finalPredicate: NSPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!])
+        
+        let fetchOptionsAssets = PHFetchOptions()
+        
+        fetchOptionsAssets.predicate = finalPredicate
+        
+        var fetchedImages: PHFetchResult<PHAsset> = PHFetchResult()
+        if let album = allAlbums.first?.firstObject {
+            fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
+        }
+
+        if fetchedImages.count > 0 {
+            fetchedImages[0].getURL(completionHandler: completionHandler)
+        } else {
+            completionHandler(nil)
+        }
     }
     
     func getVideoThumbnail(forUrl url: URL) -> UIImage? {
