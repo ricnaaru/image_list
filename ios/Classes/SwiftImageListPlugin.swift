@@ -278,10 +278,13 @@ public class SwiftImageListPlugin: NSObject, FlutterPlugin {
         }
 
         if fetchedImages.count > 0 {
-            fetchedImages[0].getURL(completionHandler: completionHandler)
-        } else {
-            completionHandler(nil)
+            if let last = fetchedImages.lastObject {
+                last.getURL(completionHandler: completionHandler)
+                return
+            }
         }
+
+        completionHandler(nil)
     }
     
     func getVideoThumbnail(forUrl url: URL) -> UIImage? {
