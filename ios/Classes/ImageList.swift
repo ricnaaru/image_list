@@ -64,7 +64,9 @@ public class ImageListView : NSObject, FlutterPlatformView {
         self.uiCollectionView.delegate = self
         self.registerCellIdentifiersForCollectionView(self.uiCollectionView)
         self.uiCollectionView.alwaysBounceVertical = true
-        self.uiCollectionView.backgroundColor = UIColor.init(argb: Int(imageListColor, radix: 16) ?? 0xffababab)
+
+        let backgroundColor: UInt32 = Int(imageListColor, radix: 16) ?? 0xffababab
+        self.uiCollectionView.backgroundColor = UIColor.init(argb: backgroundColor)
 
         loadImage()
 
@@ -428,8 +430,9 @@ extension ImageListView: UICollectionViewDelegate {
                     
                     return IndexPath(item: index, section: 0)
                 })
-                
-                cell.backgroundColor = UIColor.init(argb: Int(itemColor, radix: 16) ?? 0xffababab)
+
+                let backgroundColor:UInt32 = Int(itemColor, radix: 16) ?? 0xffababab
+                cell.backgroundColor = UIColor.init(argb: backgroundColor)
                 // Reload selected cells to update their selection number
                 UIView.setAnimationsEnabled(false)
                 collectionView.reloadItems(at: selectedIndexPaths)
