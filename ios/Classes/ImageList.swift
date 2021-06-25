@@ -65,14 +65,18 @@ public class ImageListView : NSObject, FlutterPlatformView {
         self.registerCellIdentifiersForCollectionView(self.uiCollectionView)
         self.uiCollectionView.alwaysBounceVertical = true
 
-        let backgroundColor: UInt32 = UInt32(Int(imageListColor, radix: 16)) ?? 0xffababab
-        self.uiCollectionView.backgroundColor = UIColor.init(argb: backgroundColor)
+        
+        let backgroundColorRed = Int(imageListColor[2..<4], radix: 16) ?? 0xab
+        let backgroundColorGreen = Int(imageListColor[4..<6], radix: 16) ?? 0xab
+        let backgroundColorBlue = Int(imageListColor[6..<8], radix: 16) ?? 0xab
+        let backgroundColorAlpha = Int(imageListColor[0..<2], radix: 16) ?? 0xff
+        self.uiCollectionView.backgroundColor = UIColor.init(red: backgroundColorRed, green: backgroundColorGreen, blue: backgroundColorBlue, a: backgroundColorAlpha)
 
         loadImage()
 
         setup()
     }
-
+    
     private func setup() {
         _channel.setMethodCallHandler { call, result in
             if call.method == "waitForList" {
@@ -430,9 +434,12 @@ extension ImageListView: UICollectionViewDelegate {
                     
                     return IndexPath(item: index, section: 0)
                 })
-
-                let backgroundColor:UInt32 = UInt32(Int(itemColor, radix: 16)) ?? 0xffababab
-                cell.backgroundColor = UIColor.init(argb: backgroundColor)
+                
+                let backgroundColorRed = Int(imageListColor[2..<4], radix: 16) ?? 0xab
+                let backgroundColorGreen = Int(imageListColor[4..<6], radix: 16) ?? 0xab
+                let backgroundColorBlue = Int(imageListColor[6..<8], radix: 16) ?? 0xab
+                let backgroundColorAlpha = Int(imageListColor[0..<2], radix: 16) ?? 0xff
+                cell.backgroundColor = UIColor.init(red: backgroundColorRed, green: backgroundColorGreen, blue: backgroundColorBlue, a: backgroundColorAlpha)
                 // Reload selected cells to update their selection number
                 UIView.setAnimationsEnabled(false)
                 collectionView.reloadItems(at: selectedIndexPaths)
@@ -518,5 +525,32 @@ extension UIColor {
             blue: argb & 0xFF,
             a: (argb >> 24) & 0xFF
         )
+    }
+}
+
+extension String {
+
+    var length: Int {
+        return count
+    }
+
+    subscript (i: Int) -> String {
+        return self[i ..< i + 1]
+    }
+
+    func substring(fromIndex: Int) -> String {
+        return self[min(fromIndex, length) ..< length]
+    }
+
+    func substring(toIndex: Int) -> String {
+        return self[0 ..< max(0, toIndex)]
+    }
+
+    subscript (r: Range<Int>) -> String {
+        let range = Range(uncheckedBounds: (lower: max(0, min(length, r.lowerBound)),
+                                            upper: min(length, max(0, r.upperBound))))
+        let start = index(startIndex, offsetBy: range.lowerBound)
+        let end = index(start, offsetBy: range.upperBound - range.lowerBound)
+        return String(self[start ..< end])
     }
 }
