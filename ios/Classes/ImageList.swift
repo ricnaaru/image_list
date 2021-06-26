@@ -89,6 +89,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
                 }
 
                 self.assetStore.removeAll()
+                self.selections.removeAll()
                 self.loadImage()
 
                 result(nil)
@@ -384,6 +385,7 @@ extension ImageListView: UICollectionViewDataSource {
                 cell.selectionString = String(index+1)
                 cell.photoSelected = true
             } else {
+                cell.selectionString = ""
                 cell.photoSelected = false
             }
         }
