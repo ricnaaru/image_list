@@ -446,7 +446,8 @@ extension ImageListView: UICollectionViewDelegate {
                 UIView.setAnimationsEnabled(false)
                 collectionView.reloadItems(at: selectedIndexPaths)
                 UIView.setAnimationsEnabled(true)
-                
+
+                cell.selectionString = ""
                 cell.photoSelected = false
             } else if maxImage == nil || assetStore.count < maxImage! { // Select
                 // Select asset if not already selected
