@@ -294,7 +294,13 @@ public class ImageListView : NSObject, FlutterPlatformView {
                         }
                     }
                 }
-            }
+
+                if i % 100 == 0 {
+                    DispatchQueue.main.async {
+                        self.uiCollectionView.reloadData()
+                    }
+                }
+             }
         }
 
         DispatchQueue.main.async {
