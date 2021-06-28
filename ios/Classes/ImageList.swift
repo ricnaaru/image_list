@@ -90,7 +90,10 @@ public class ImageListView : NSObject, FlutterPlatformView {
 
                 self.assetStore.removeAll()
                 self.selections.removeAll()
-                self.loadImage()
+                
+                DispatchQueue.main.async {
+                    self.uiCollectionView.reloadData()
+                }
 
                 result(nil)
             } else if call.method == "reloadAlbum" {
