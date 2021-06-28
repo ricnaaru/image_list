@@ -380,9 +380,9 @@ extension ImageListView: UICollectionViewDataSource {
         let option = PHImageRequestOptions()
 
         option.isNetworkAccessAllowed = true //(false by default)
-        option.isSynchronous = false
+        option.isSynchronous = true
         // Request image
-        cell.tag = Int(PHCachingImageManager.default().requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: option) { (result, e) in
+        cell.tag = Int(photosManager.requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: option) { (result, e) in
             cell.imageView.image = result
         })
         
