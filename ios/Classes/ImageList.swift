@@ -380,7 +380,13 @@ extension ImageListView: UICollectionViewDataSource {
         let option = PHImageRequestOptions()
 
         option.isNetworkAccessAllowed = true //(false by default)
-        option.isSynchronous = true
+        option.isSynchronous = false
+        option.deliveryMode = .fastFormat
+        
+        let square = CGRect(x: 0, y: 0, width: imageSize.width, height:   imageSize.height)
+        let cropRect = square.applying( CGAffineTransform(scaleX: CGFloat(1 / asset.pixelWidth), y: CGFloat(1 / asset.pixelHeight)))
+        
+        option.normalizedCropRect = cropRect
         // Request image
         cell.tag = Int(photosManager.requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: option) { (result, e) in
             cell.imageView.image = result
