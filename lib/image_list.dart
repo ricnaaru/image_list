@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_list/plugin.dart';
+
 import 'data/media.dart';
 
 part 'controller.dart';
@@ -94,7 +95,11 @@ class _ImageListState extends State<ImageList> {
       return AndroidView(
         viewType: 'plugins.flutter.io/image_list',
         onPlatformViewCreated: onPlatformViewCreated,
-        gestureRecognizers: gestureRecognizers,
+        gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
+          new Factory<OneSequenceGestureRecognizer>(
+            () => new EagerGestureRecognizer(),
+          ),
+        ].toSet(),
         creationParams: creationParams,
         creationParamsCodec: const StandardMessageCodec(),
       );
@@ -102,7 +107,11 @@ class _ImageListState extends State<ImageList> {
       return UiKitView(
         viewType: 'plugins.flutter.io/image_list',
         onPlatformViewCreated: onPlatformViewCreated,
-        gestureRecognizers: gestureRecognizers,
+        gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
+          new Factory<OneSequenceGestureRecognizer>(
+                () => new EagerGestureRecognizer(),
+          ),
+        ].toSet(),
         creationParams: creationParams,
         creationParamsCodec: const StandardMessageCodec(),
       );
