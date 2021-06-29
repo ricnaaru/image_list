@@ -24,7 +24,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
     var _channel: FlutterMethodChannel
     
     private let photosManager = PHCachingImageManager.default()
-    private let imageContentMode: PHImageContentMode = .aspectFill
+    private let imageContentMode: PHImageContentMode = .aspectFit
     
     let assetStore: AssetStore
     var albumId: String = ""
@@ -381,15 +381,17 @@ extension ImageListView: UICollectionViewDataSource {
 
         option.isNetworkAccessAllowed = true //(false by default)
         option.isSynchronous = false
-        option.deliveryMode = .fastFormat
         
-        let square = CGRect(x: 0, y: 0, width: imageSize.width, height:   imageSize.height)
+        print("imageSize => \(imageSize)")
+        let square = CGRect(x: 0, y: 0, width: 4096, height:   4096)
         let cropRect = square.applying( CGAffineTransform(scaleX: CGFloat(1 / asset.pixelWidth), y: CGFloat(1 / asset.pixelHeight)))
         
         option.normalizedCropRect = cropRect
+        print("start => \(indexPath.item) - \(Date().timeIntervalSinceReferenceDate)")
         // Request image
-        cell.tag = Int(photosManager.requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: option) { (result, e) in
+        cell.tag = Int(photosManager.requestImage(for: asset, targetSize: CGSize(width: 4096, height: 4096), contentMode: imageContentMode, options: option) { (result, e) in
             cell.imageView.image = result
+            print("result => \(indexPath.item) - \(Date().timeIntervalSinceReferenceDate) - \(type(of: result)), \(result?.size)")
         })
         
         // Set selection number
