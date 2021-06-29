@@ -286,25 +286,25 @@ public class ImageListView : NSObject, FlutterPlatformView {
             self.fetchedImages = PHAsset.fetchAssets(in: album, options: fetchOptionsAssets)
         }
 
-        if self.fetchedImages.count > 0 {
-            for i in 0...self.fetchedImages.count - 1 {
-                if self.selections.count > 0 {
-                    for j in 0...self.selections.count - 1 {
-                        let x = self.selections[j]
-
-                        if x["assetId"] == fetchedImages[i].localIdentifier {
-                            assetStore.insert(fetchedImages[i], self.albumId, at: j)
-                        }
-                    }
-                }
-
-                if i % 100 == 0 {
-                    DispatchQueue.main.async {
-                        self.uiCollectionView.reloadData()
-                    }
-                }
-             }
-        }
+//        if self.fetchedImages.count > 0 {
+//            for i in 0...self.fetchedImages.count - 1 {
+//                if self.selections.count > 0 {
+//                    for j in 0...self.selections.count - 1 {
+//                        let x = self.selections[j]
+//
+//                        if x["assetId"] == fetchedImages[i].localIdentifier {
+//                            assetStore.insert(fetchedImages[i], self.albumId, at: j)
+//                        }
+//                    }
+//                }
+//
+//                if i % 100 == 0 {
+//                    DispatchQueue.main.async {
+//                        self.uiCollectionView.reloadData()
+//                    }
+//                }
+//             }
+//        }
 
         DispatchQueue.main.async {
             self.uiCollectionView.reloadData()
