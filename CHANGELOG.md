@@ -1,3 +1,7 @@
+## 2.0.4+3
+
+* Fix Int limit error on IOS
+
 ## 2.0.4+2
 
 * Change Selection and Duration Text the same position as Android for IOS
