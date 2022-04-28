@@ -2,7 +2,7 @@
 
 This is an Image List to display image from phone with the smoothest UI
 
-There's still so much features that I haven't included such as video previewing, image cropping, etc.](https://pub.dev/packages/camera#-changelog-tab-)) plugin, but they haven't include focus and flashlight feature there.
+There's still so much features that I haven't included such as video previewing, image cropping, etc.
 
 ## Installation
 
