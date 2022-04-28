@@ -1,14 +1,26 @@
-# image_list
+# Image List
 
-A new Flutter plugin.
+This is an Image List to display image from phone with the smoothest UI
 
-## Getting Started
+There's still so much features that I haven't included such as video previewing, image cropping, etc.](https://pub.dev/packages/camera#-changelog-tab-)) plugin, but they haven't include focus and flashlight feature there.
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+## Installation
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+First, add `image_list` as a [dependency in your pubspec.yaml file](https://flutter.io/using-packages/).
+
+This plugin is made to support my other plugin [adv_image_picker](https://pub.dev/packages/adv_image_picker#-readme-tab-), you can see that its permission is handled there.
+
+## Example
+You can find the full example, [here]([https://github.com/ricnaaru/image_list/tree/master/example](https://github.com/ricnaaru/image_list/tree/master/example))
+
+## Future developments
+- Image cropping
+- Video display
+- More testing and bug fixing
+
+## Support
+This repository isn't maintained that well, but I will try to keep it well-maintained as much as possible. Please consider support me..
+
+[![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/white_img.png)](https://www.buymeacoffee.com/rthayeb)
+
+<br>
