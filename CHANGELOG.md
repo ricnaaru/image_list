@@ -1,4 +1,16 @@
-## Unreleased
+## 2.0.4+3
+
+* Fix Int limit error on IOS
+
+## 2.0.4+2
+
+* Change Selection and Duration Text the same position as Android for IOS
+
+## 2.0.4+1
+
+* Fix images sorting problem on IOS
+
+## 2.0.4
 
 * Add color parameter for ImageList and Item
 * Add selectedImages to onImageTapped
