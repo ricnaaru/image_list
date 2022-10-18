@@ -1,3 +1,7 @@
+## 3.0.0
+
+* Support for Flutter 3
+
 ## 2.0.4+3
 
 * Fix Int limit error on IOS
