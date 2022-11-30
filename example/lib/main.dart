@@ -1,12 +1,7 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:image_list/data/media.dart';
 import 'package:image_list/image_list.dart';
 import 'package:image_list/plugin.dart';
-import 'package:image_list_example/image_preview.dart';
-import 'package:image_list_example/video_preview.dart';
 
 void main() => runApp(MyApp());
 
@@ -61,8 +56,7 @@ class _MyAppState extends State<MyApp> {
                                     getAlbums();
                                   });
                                 },
-                                controlAffinity: ListTileControlAffinity
-                                    .leading, //  <-- leading Checkbox
+                                controlAffinity: ListTileControlAffinity.leading, //  <-- leading Checkbox
                               ),
                             ),
                             Expanded(
@@ -80,8 +74,7 @@ class _MyAppState extends State<MyApp> {
                                     getAlbums();
                                   });
                                 },
-                                controlAffinity: ListTileControlAffinity
-                                    .leading, //  <-- leading Checkbox
+                                controlAffinity: ListTileControlAffinity.leading, //  <-- leading Checkbox
                               ),
                             ),
                           ],
@@ -93,34 +86,25 @@ class _MyAppState extends State<MyApp> {
                               this.currentAlbum = newAlbum;
                               setState(() {
                                 if (controller != null && currentAlbum != null)
-                                  this
-                                      .controller!
-                                      .reloadAlbum(currentAlbum!.identifier);
+                                  this.controller!.reloadAlbum(currentAlbum!.identifier);
                               });
                             },
-                            items: albums!
-                                .map<DropdownMenuItem<Album>>((Album value) {
+                            items: albums!.map<DropdownMenuItem<Album>>((Album value) {
                               return DropdownMenuItem<Album>(
                                 value: value,
                                 child: Container(
-                                  width:
-                                      MediaQuery.of(context).size.width - 100,
-                                  child: Text("${value.name} (${value.count})",
-                                      maxLines: 2),
+                                  width: MediaQuery.of(context).size.width - 100,
+                                  child: Text("${value.name} (${value.count})", maxLines: 2),
                                 ),
                               );
                             }).toList(),
                           ),
                         TextButton(
-                          child: Text(
-                              multipleMode ? "Set Single" : "Set Multiple"),
+                          child: Text(multipleMode ? "Set Single" : "Set Multiple"),
                           onPressed: () {
                             setState(() {
                               multipleMode = !multipleMode;
-                              if (this.controller != null)
-                                this
-                                    .controller!
-                                    .setMaxImage(multipleMode ? null : 1);
+                              if (this.controller != null) this.controller!.setMaxImage(multipleMode ? null : 1);
                             });
                           },
                         ),
@@ -202,10 +186,8 @@ class _MyAppState extends State<MyApp> {
         setState(() {
           this.loading = false;
           this.albums = albums;
-          if (this.albums != null && this.albums!.isNotEmpty)
-            this.currentAlbum = albums!.first;
-          if (controller != null && currentAlbum != null)
-            this.controller!.reloadAlbum(currentAlbum!.identifier);
+          if (this.albums != null && this.albums!.isNotEmpty) this.currentAlbum = albums!.first;
+          if (controller != null && currentAlbum != null) this.controller!.reloadAlbum(currentAlbum!.identifier);
         });
     });
   }

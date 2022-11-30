@@ -1,3 +1,7 @@
+## 3.0.1
+
+* Upgrade gradle properties
+
 ## 3.0.0
 
 * Support for Flutter 3
