@@ -2,7 +2,6 @@ package com.ric.image_list;
 
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,12 +17,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.loader.content.CursorLoader;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.karumi.dexter.MultiplePermissionsReport;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,7 +45,6 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.platform.PlatformView;
 
 public class ImageList implements MethodChannel.MethodCallHandler,
@@ -122,27 +120,28 @@ public class ImageList implements MethodChannel.MethodCallHandler,
         }
 
         recyclerView.setBackgroundColor(imageListColor);
-
-        if (checkPermission()) {
-            long bucketId = 0;
-
-            try {
-                bucketId = Long.parseLong(albumId);
-            } catch (Exception ignored) {
-
-            }
-
-            new DisplayImage(context, this, bucketId, true, types).execute();
-        }
+        checkPermission();
+//        this.setAdapter(new MediaData[]{});
     }
 
-    private boolean checkPermission() {
+    private void checkPermission() {
         PermissionCheck permissionCheck = new PermissionCheck(context);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return permissionCheck.CheckStoragePermission();
-        } else {
-            return true;
+            permissionCheck.CheckStoragePermission(report -> {
+                boolean allGranted = report.areAllPermissionsGranted();
+                Log.d("ricric", "allGranted => " + allGranted);
+                if (allGranted) {
+                    long bucketId = 0;
+
+                    try {
+                        bucketId = Long.parseLong(albumId);
+                    } catch (Exception ignored) {
+
+                    }
+                    new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
+                }
+            });
         }
     }
 
@@ -173,24 +172,8 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                     }
                 }
 
-                if (checkPermission()) {
-                    long bucketId = 0;
-
-                    try {
-                        bucketId = Long.parseLong(albumId);
-                    } catch (Exception ignored) {
-
-                    }
-
-                    this.setAdapter(new MediaData[]{});
-                    try {
-                        new DisplayImage(context, this, bucketId, true, types).execute().get();
-                    } catch (ExecutionException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+                checkPermission();
+                this.setAdapter(new MediaData[]{});
 
                 result.success(true);
                 break;
@@ -345,6 +328,7 @@ public class ImageList implements MethodChannel.MethodCallHandler,
                 refreshThumb();
             }
         });
+        Log.d("ricric", "setAdapter");
 
         recyclerView.setAdapter(adapter);
     }
@@ -380,29 +364,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        binding.addRequestPermissionsResultListener(new PluginRegistry.RequestPermissionsResultListener() {
-            @Override
-            public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-                if (requestCode == 28) {
-                    if (grantResults.length > 0) {
-                        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            long bucketId = 0;
-
-                            try {
-                                bucketId = Long.parseLong(albumId);
-                            } catch (Exception ignored) {
-
-                            }
-
-                            new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
-                        } else {
-                            new PermissionCheck(context).showPermissionDialog();
-                        }
-                    }
-                }
-                return false;
-            }
-        });
     }
 
     @Override
@@ -412,29 +373,6 @@ public class ImageList implements MethodChannel.MethodCallHandler,
 
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-        binding.addRequestPermissionsResultListener(new PluginRegistry.RequestPermissionsResultListener() {
-            @Override
-            public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-                if (requestCode == 28) {
-                    if (grantResults.length > 0) {
-                        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                            long bucketId = 0;
-
-                            try {
-                                bucketId = Long.parseLong(albumId);
-                            } catch (Exception ignored) {
-
-                            }
-
-                            new DisplayImage(context, ImageList.this, bucketId, true, types).execute();
-                        } else {
-                            new PermissionCheck(context).showPermissionDialog();
-                        }
-                    }
-                }
-                return false;
-            }
-        });
     }
 
     @Override
@@ -469,7 +407,7 @@ class DisplayImage extends AsyncTask<Void, Void, MediaData[]> {
     @Override
     protected void onPostExecute(MediaData[] result) {
         super.onPostExecute(result);
-        
+
         imageList.setAdapter(result);
     }
 

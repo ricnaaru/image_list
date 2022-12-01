@@ -1,3 +1,7 @@
+## 3.0.2
+
+* Support for Android 33
+
 ## 3.0.1
 
 * Upgrade gradle properties

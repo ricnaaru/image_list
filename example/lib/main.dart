@@ -181,14 +181,16 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAlbums() {
-    ImageListPlugin.getAlbums(types: types).then((albums) {
-      if (this.mounted)
-        setState(() {
-          this.loading = false;
-          this.albums = albums;
-          if (this.albums != null && this.albums!.isNotEmpty) this.currentAlbum = albums!.first;
-          if (controller != null && currentAlbum != null) this.controller!.reloadAlbum(currentAlbum!.identifier);
-        });
+    ImageListPlugin.checkPermission().then((value) {
+      ImageListPlugin.getAlbums(types: types).then((albums) {
+        if (this.mounted)
+          setState(() {
+            this.loading = false;
+            this.albums = albums;
+            if (this.albums != null && this.albums!.isNotEmpty) this.currentAlbum = albums!.first;
+            if (controller != null && currentAlbum != null) this.controller!.reloadAlbum(currentAlbum!.identifier);
+          });
+      });
     });
   }
 }

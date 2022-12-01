@@ -1,8 +1,6 @@
 package com.ric.image_list;
 
 import android.graphics.Color;
-import android.net.Uri;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,7 +72,7 @@ public class ImageListAdapter
 
         if (image instanceof VideoData) {
             vh.durationText.setVisibility(View.VISIBLE);
-            vh.durationText.setText(millisecondsToHhMm(((VideoData)image).duration));
+            vh.durationText.setText(millisecondsToHhMm(((VideoData) image).duration));
         }
 
         vh.imgThumbImage.setOnClickListener(new View.OnClickListener() {
@@ -107,7 +105,7 @@ public class ImageListAdapter
                     methodChannel.invokeMethod("onImageTapped", params);
                 }
             }
-        } );
+        });
     }
 
     private String millisecondsToHhMm(long milliseconds) {

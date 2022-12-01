@@ -26,12 +26,10 @@ public class ImageListFactory extends PlatformViewFactory {
 //    public PlatformView create(Context context, int id, Object args) {
 //        return new ImageList(id, context, mPluginRegistrar, args);
 //    }
-    @NonNull
     private final BinaryMessenger messenger;
-    @NonNull
     private final View containerView;
 
-    ImageListFactory(@NonNull BinaryMessenger messenger, @NonNull View containerView) {
+    ImageListFactory(@NonNull BinaryMessenger messenger, View containerView) {
         super(StandardMessageCodec.INSTANCE);
         this.messenger = messenger;
         this.containerView = containerView;

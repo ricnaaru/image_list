@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
@@ -18,12 +19,8 @@ import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.CustomTarget;
-import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
@@ -34,6 +31,7 @@ import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,20 +81,37 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
 
             result.success(finalResult);
         } else if (call.method.equals("checkPermission")) {
-            Dexter.withActivity(this.activity)
-                    .withPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    .withListener(new MultiplePermissionsListener() {
-                        @Override
-                        public void onPermissionsChecked(MultiplePermissionsReport report) {
-                            result.success(report.areAllPermissionsGranted());
-                        }
+            if (Build.VERSION.SDK_INT < 33) {
+                Dexter.withContext(this.activity)
+                        .withPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)
+                        .withListener(new MultiplePermissionsListener() {
+                            @Override
+                            public void onPermissionsChecked(MultiplePermissionsReport report) {
+                                result.success(report.areAllPermissionsGranted());
+                            }
 
-                        @Override
-                        public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
-                            token.continuePermissionRequest();
-                        }
-                    })
-                    .check();
+                            @Override
+                            public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
+                                token.continuePermissionRequest();
+                            }
+                        })
+                        .check();
+            } else {
+                Dexter.withContext(this.activity)
+                        .withPermissions(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+                        .withListener(new MultiplePermissionsListener() {
+                            @Override
+                            public void onPermissionsChecked(MultiplePermissionsReport report) {
+                                result.success(report.areAllPermissionsGranted());
+                            }
+
+                            @Override
+                            public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
+                                token.continuePermissionRequest();
+                            }
+                        })
+                        .check();
+            }
         } else if (call.method.equals("getThumbnail")) {
             String uriString = null;
             Integer width = null;
@@ -158,7 +173,8 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
             if (c != null) {
                 try {
                     if (c.moveToFirst()) {
-                        int imgId = c.getInt(c.getColumnIndex(MediaStore.MediaColumns._ID));
+                        int index = c.getColumnIndex(MediaStore.MediaColumns._ID);
+                        int imgId = c.getInt(index);
                         Uri uri = Uri.withAppendedPath(queryUri, "" + imgId);
                         path = uri.toString();
                     }
@@ -179,7 +195,7 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
                     result.success(bytes);
                 }
             };
-            
+
             getThumbnail(callback, path, width, height, quality, albumUriString);
         }
     }
@@ -367,12 +383,12 @@ public class ImageListPlugin implements FlutterPlugin, MethodCallHandler, Activi
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
                         super.onLoadFailed(errorDrawable);
-                        Log.d("ricric", "failed on (" +  x + ") " + finalUri);
+                        Log.d("ricric", "failed on (" + x + ") " + finalUri);
                     }
                 });
     }
 }
 
 interface ThumbnailCallback {
-    public void onThumbnailReady(byte[] bytes);
+    void onThumbnailReady(byte[] bytes);
 }
