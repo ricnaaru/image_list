@@ -181,46 +181,64 @@ public class ImageListView : NSObject, FlutterPlatformView {
         return newImage
     }
 
-    private func getSelectedImages(completionHandler : @escaping (([[String: String]]) -> Void)) {
-        var selectedImages: [[String: String]] = []
+    private func getSelectedImages(completionHandler : @escaping (([[String: Any]]) -> Void)) {
+        var selectedImages: [[String: Any]] = []
 
         if self.assetStore.assets.count == 0 {
             completionHandler(selectedImages)
         } else {
             for i in 0...self.assetStore.assets.count - 1 {
-                var dict: [String: String] = [String:String]()
+                var dict: [String: Any] = [String:Any]()
                 if let asset = self.assetStore.assets[i]?.asset {
-                    let option = PHContentEditingInputRequestOptions()
-                    option.isNetworkAccessAllowed = true
-                    autoreleasepool {
-                        let _ = asset.requestContentEditingInput(with: option) { (input, _) in
-                            asset.getURL(completionHandler:  { responseUrl in
-                                if let url = responseUrl {
-                                    dict["albumId"] = self.albumId
-                                    dict["type"] = asset.mediaType == .video ? "VIDEO" : "IMAGE"
-                                    if asset.mediaType == .video {
-                                        dict["duration"] = String.init(asset.duration * 1000)
-                                    }
-                                    dict["assetId"] = "\(url.path)"
-                                    dict["uri"] = "\(url.path)"
-                                    selectedImages.append(dict)
+                    if asset.sourceType == .typeCloudShared || asset.sourceType == .typeiTunesSynced {
+                        asset.requestContentEditingInput(with: nil, completionHandler: { (contentEditingInput, _) in
+                            if let contentEditingInput = contentEditingInput {
+                                let fullImageURL = contentEditingInput.fullSizeImageURL
+                                let fullImageData = try? Data(contentsOf: fullImageURL!)
+                                dict["type"] = asset.mediaType == .video ? "VIDEO" : "IMAGE"
+                                dict["assetId"] = fullImageURL
+                                dict["uri"] = fullImageURL
+                                dict["imageData"] = fullImageData
+                                selectedImages.append(dict)
 
-                                    if selectedImages.count == self.assetStore.assets.count {
-                                        completionHandler(selectedImages)
-                                    }
-    //                                let newFile = self.secureCopyItem(at: url)
-    //                                if let newFile = newFile {
-    //                                    dict["assetId"] = "\(newFile)"
-    //
-    //                                    print("dict -> \(dict)")
-    //                                    selectedImages.append(dict)
-    //
-    //                                    if selectedImages.count == self.assetStore.assets.count {
-    //                                        flutterResult(selectedImages)
-    //                                    }
-    //                                }
+                                if selectedImages.count == self.assetStore.assets.count {
+                                    completionHandler(selectedImages)
                                 }
-                            })
+                            }
+                        })
+                    } else {
+                        let option = PHContentEditingInputRequestOptions()
+                        option.isNetworkAccessAllowed = true
+                        autoreleasepool {
+                            let _ = asset.requestContentEditingInput(with: option) { (input, _) in
+                                asset.getURL(completionHandler:  { responseUrl in
+                                    if let url = responseUrl {
+                                        dict["albumId"] = self.albumId
+                                        dict["type"] = asset.mediaType == .video ? "VIDEO" : "IMAGE"
+                                        if asset.mediaType == .video {
+                                            dict["duration"] = String.init(asset.duration * 1000)
+                                        }
+                                        dict["assetId"] = "\(url.path)"
+                                        dict["uri"] = "\(url.path)"
+                                        selectedImages.append(dict)
+
+                                        if selectedImages.count == self.assetStore.assets.count {
+                                            completionHandler(selectedImages)
+                                        }
+        //                                let newFile = self.secureCopyItem(at: url)
+        //                                if let newFile = newFile {
+        //                                    dict["assetId"] = "\(newFile)"
+        //
+        //                                    print("dict -> \(dict)")
+        //                                    selectedImages.append(dict)
+        //
+        //                                    if selectedImages.count == self.assetStore.assets.count {
+        //                                        flutterResult(selectedImages)
+        //                                    }
+        //                                }
+                                    }
+                                })
+                            }
                         }
                     }
                 }
@@ -259,6 +277,9 @@ public class ImageListView : NSObject, FlutterPlatformView {
         }
         
         var finalPredicate: NSPredicate?
+        let iCloudPredicate = NSPredicate(format: "mediaSubtype != %ld AND mediaSubtype != %ld",
+                                          PHAssetMediaSubtype.photoScreenshot.rawValue,
+                                          PHAssetMediaSubtype.photoLive.rawValue)
             
         if (imagePredicate != nil && videoPredicate != nil) {
             finalPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.or, subpredicates: [imagePredicate!, videoPredicate!])
@@ -274,7 +295,7 @@ public class ImageListView : NSObject, FlutterPlatformView {
         
         let fetchOptionsAssets = PHFetchOptions()
         
-        fetchOptionsAssets.predicate = finalPredicate!
+        fetchOptionsAssets.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [finalPredicate!])
         let sortOrder = [NSSortDescriptor(key: "creationDate", ascending: false)]
         fetchOptionsAssets.sortDescriptors = sortOrder
 

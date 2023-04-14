@@ -49,5 +49,9 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allows you to choose a picture</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

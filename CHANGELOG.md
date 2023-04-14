@@ -1,3 +1,7 @@
+## 3.0.3
+
+* Return image data if the file is iCloud resource
+
 ## 3.0.2
 
 * Support for Android 33

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:image_list/data/media.dart';
 
 class VideoData extends MediaData {
@@ -8,11 +10,14 @@ class VideoData extends MediaData {
     required String assetId,
     required String? uri,
     required this.durationMs,
+    required Uint8List? imageData,
   }) : super(
-      albumId: albumId,
-      assetId: assetId,
-      uri: uri,
-      type: MediaType.video);
+          albumId: albumId,
+          assetId: assetId,
+          uri: uri,
+          type: MediaType.video,
+          imageData: imageData,
+        );
 
   static VideoData fromJson(Map json) {
     return VideoData(
@@ -20,6 +25,7 @@ class VideoData extends MediaData {
       assetId: json['assetId'] as String,
       uri: json['uri'] as String?,
       durationMs: int.tryParse(json['duration'] as String) ?? 0,
+      imageData: json['imageData'] as Uint8List?,
     );
   }
 

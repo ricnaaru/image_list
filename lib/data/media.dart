@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:image_list/data/image.dart';
 import 'package:image_list/data/video.dart';
 
@@ -8,12 +10,14 @@ class MediaData {
   final String assetId;
   final MediaType type;
   final String? uri;
+  final Uint8List? imageData;
 
   MediaData({
     required this.albumId,
     required this.assetId,
     required this.uri,
     required this.type,
+    required this.imageData,
   });
 
   Map toMap() {
@@ -22,6 +26,7 @@ class MediaData {
       "assetId": assetId,
       "type": type == MediaType.image ? "IMAGE" : "VIDEO",
       "uri": uri,
+      "imageData": imageData,
     };
   }
 
